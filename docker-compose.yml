@@ -36,9 +36,6 @@ services:
     working_dir: /cryptoexchangecompare
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=1
-      - DJANGO_ENV=development
     depends_on:
       - redis
       - postgres
@@ -52,10 +49,8 @@ services:
       - cxc
     command: bash -c  "python manage.py makemigrations &&
                        python manage.py migrate &&
-                       celery -A cryptoexchangecompare worker -B -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+                       celery -A cryptoexchangecompare worker -B -l INFO"
     volumes:
       - ./volumes/cxc_worker/:/home/hossein/
     environment:
-      - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
-      - DJANGO_ENV=development
