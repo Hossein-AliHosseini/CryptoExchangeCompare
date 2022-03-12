@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: on-failure
+    ports:
+      - 5432:5432
+    volumes:
+      - ./volumes/postgres_volume/:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=CXC_DB
+      - POSTGRES_USER=CXC_USER
+      - POSTGRES_PASSWORD=CXC_PASSWORD
+
+  redis:
+    container_name: redis
+    image: redis
+    restart: on-failure
+    ports:
+      - 6379:6379
+    volumes:
+      - ./volumes/redis_volume/:/data/
+
+  cxc:
+    container_name: cxc
+    build: .
+    restart: on-failure
+    command: >
+      bash -c "python manage.py makemigrations &&
+               python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./cryptoexchangecompare:/cryptoexchangecompare
+    working_dir: /cryptoexchangecompare
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_ENV=development
+    depends_on:
+      - redis
+      - postgres
+
+  cxc_worker:
+    container_name: cxc_worker
+    build: .
+    restart: on-failure
+    depends_on:
+      - redis
+      - cxc
+    command: bash -c  "python manage.py makemigrations &&
+                       python manage.py migrate &&
+                       celery -A cryptoexchangecompare worker -B -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    volumes:
+      - ./volumes/cxc_worker/:/home/hossein/
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER=redis://redis:6379/0
+      - DJANGO_ENV=development
