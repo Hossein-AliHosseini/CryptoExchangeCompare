@@ -5,7 +5,8 @@ ENV PYTHONUNBUFFERED 1
 COPY ./requirements.txt /requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-RUN mkdir /cryptoexchangecompare
+ADD . /cryptoexchangecompare
 WORKDIR /cryptoexchangecompare
-COPY ./cryptoexchangecompare /cryptoexchangecompare
 
+RUN useradd -u 1000 hossein
+USER hossein
