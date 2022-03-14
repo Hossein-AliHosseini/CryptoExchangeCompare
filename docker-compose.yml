@@ -36,6 +36,10 @@ services:
     working_dir: /cryptoexchangecompare
     ports:
       - "8000:8000"
+    environment:
+      - POSTGRES_DB=CXC_DB
+      - POSTGRES_USER=CXC_USER
+      - POSTGRES_PASSWORD=CXC_PASSWORD
     depends_on:
       - redis
       - postgres
