@@ -2,11 +2,12 @@ FROM python:3.8
 
 ENV PYTHONUNBUFFERED 1
 
-COPY ./requirements.txt /requirements.txt
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
+WORKDIR /code
 
-ADD . /cryptoexchangecompare
-WORKDIR /cryptoexchangecompare
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
 
 RUN useradd -u 1000 hossein
 USER hossein

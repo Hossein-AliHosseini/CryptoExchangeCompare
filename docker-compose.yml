@@ -4,7 +4,7 @@ services:
   postgres:
     container_name: postgres
     image: postgres
-    restart: on-failure
+    restart: always
     ports:
       - 5432:5432
     volumes:
@@ -17,7 +17,7 @@ services:
   redis:
     container_name: redis
     image: redis
-    restart: on-failure
+    restart: always
     ports:
       - 6379:6379
     volumes:
@@ -26,14 +26,13 @@ services:
   cxc:
     container_name: cxc
     build: .
-    restart: on-failure
+    restart: always
     command: >
       bash -c "python manage.py makemigrations &&
                python manage.py migrate &&
                python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - ./cryptoexchangecompare:/cryptoexchangecompare
-    working_dir: /cryptoexchangecompare
+      - .:/code
     ports:
       - "8000:8000"
     environment:
@@ -47,13 +46,13 @@ services:
   cxc_worker:
     container_name: cxc_worker
     build: .
-    restart: on-failure
+    restart: always
     depends_on:
       - redis
       - cxc
     command: bash -c  "python manage.py makemigrations &&
                        python manage.py migrate &&
-                       celery -A cryptoexchangecompare worker -B -l INFO"
+                       celery -A cryptoexchangecompare worker -l INFO"
     volumes:
       - ./volumes/cxc_worker/:/home/hossein/
     environment:

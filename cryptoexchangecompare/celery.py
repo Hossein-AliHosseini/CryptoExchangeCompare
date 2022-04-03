@@ -1,7 +1,9 @@
 import os
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptoexchangecompare.settings')
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE',
+                      'cryptoexchangecompare.settings.development')
 
 app = Celery('cryptoexchangecompare')
 
