@@ -59,12 +59,14 @@ class UserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(
         max_length=32
     )
+    send_sms = serializers.BooleanField(default=False)
 
     class Meta:
         unique_together = ('first_name', 'last_name')
         model = User
         fields = ['email', 'phone_number', 'password_1', 'password_2',
-                  'national_code', 'first_name', 'last_name', 'person']
+                  'national_code', 'first_name', 'last_name', 'person',
+                  'send_sms']
 
     def validate(self, attrs):
         if attrs.get('password_1') != attrs.get('password_2'):

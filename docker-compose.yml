@@ -23,9 +23,19 @@ services:
     volumes:
       - ./volumes/redis_volume/:/data/
 
+  flask:
+    container_name: flask
+    build: .
+    ports:
+      - 5000:5000
+    command: >
+      bash -c "export FLASK_APP=SMS_service/sms_service &&
+               flask run"
+
   cxc:
     container_name: cxc
     build: .
+    # network_mode: 'host'
     restart: always
     command: >
       bash -c "python manage.py makemigrations &&

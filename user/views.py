@@ -46,7 +46,7 @@ class SignUpAPIView(GenericAPIView):
         # token = Token.objects.create(user=user)
         # eid = urlsafe_base64_encode(force_bytes(user.email))
         # aut = ActivateUserToken.objects.create(token=token, eid=eid)
-        user.send_activation_email()
+        user.send_activation_link(serializer.validated_data['send_sms'])
         # User.activate(eid, token)
 
         return Response(

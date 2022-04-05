@@ -12,3 +12,9 @@ pillow==9.0.1
 django-model-utils==4.2.0
 django-cors-headers==3.6.0
 Faker==13.3.4
+Flask==2.1.1
+ozekilibsrest==1.8.0
+django-sendsms
+django-sms
+twilio==7.8.0
+kavenegar

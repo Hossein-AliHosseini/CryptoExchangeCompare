@@ -5,7 +5,7 @@ from model_utils.models import TimeStampedModel
 from user.models import User
 
 
-class Exchange:
+class ExchangeChoice:
     NOBITEX = 'Nobitex'
     WALLEX = 'Wallex'
     PHINIX = 'Phinix'
@@ -47,13 +47,28 @@ class Status:
         (SUCCESS, 'Success'),
     )
 
+# Exchange Provider
+
+class Exchange(TimeStampedModel):
+    name = models.CharField(max_length=16,
+                            default=ExchangeChoice.NOBITEX,
+                            choices=ExchangeChoice.TYPES,)
+    obtain_token_command = models.CharField(max_length=256,
+                                            null=True, blank=True)
+    place_bid_command = models.CharField(max_length=256,
+                                         null=True, blank=True)
+    get_assets_command = models.CharField(max_length=256,
+                                          null=True, blank=True)
+    get_market_details_command = models.CharField(max_length=256,
+                                                  null=True, blank=True)
+
 
 class Account(TimeStampedModel):
     owner = models.ForeignKey(User, on_delete=models.CASCADE,
                               related_name='account')
     exchange = models.CharField(max_length=10,
-                                choices=Exchange.TYPES,
-                                default=Exchange.NOBITEX)
+                                choices=ExchangeChoice.TYPES,
+                                default=ExchangeChoice.NOBITEX)
     token = models.CharField(max_length=128, null=True)
 
     class Meta:
@@ -67,8 +82,8 @@ class Transaction(TimeStampedModel):
                               choices=Crypto.TYPES,
                               default=Crypto.BITCOIN)
     exchange = models.CharField(max_length=10,
-                                choices=Exchange.TYPES,
-                                default=Exchange.NOBITEX)
+                                choices=ExchangeChoice.TYPES,
+                                default=ExchangeChoice.NOBITEX)
     status = models.CharField(max_length=16,
                               choices=Status.TYPES,)
     volume = models.FloatField()

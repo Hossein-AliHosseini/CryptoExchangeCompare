@@ -10,16 +10,19 @@ from django.conf import settings
 from django.core.mail.message import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.contrib.auth import get_user_model
+
 import sys
+import requests
 
 from rest_framework.authtoken.models import Token
 from model_utils.models import TimeStampedModel
 
+from kavenegar import *
+
 
 class User(AbstractUser):
 
-    def send_activation_email(self):
+    def send_activation_link(self, is_sms):
         activate_user_token = ActivateUserToken(
             token=Token.objects.create(user=self),
             eid=urlsafe_base64_encode(force_bytes(self.email)),
@@ -32,32 +35,39 @@ class User(AbstractUser):
             'token': activate_user_token.token.key,
             'first_name': self.person.first_name
         }
-        from user.tasks import send_email
+        # from user.tasks import send_email
 
         # send_email.delay(self.id, context,
         #                  'user/registerifinal.htm',
         #                  'Account Activation Email')
 
-        email_message_html = render_to_string('user/user_activate_email.html',
-                                              context=context)
-        email_message_plaintext = strip_tags(email_message_html)
+        activation_message_html = render_to_string('user/user_activate_email.html',
+                                                   context=context)
+        activation_message_plaintext = strip_tags(activation_message_html)
 
-        email = EmailMultiAlternatives(
-            subject='Account Activation Email',
-            body=email_message_plaintext,
-            from_email=settings.EMAIL_HOST_USER,
-            to=[self.email]
-            )
+        if not is_sms:
+            email = EmailMultiAlternatives(
+                subject='Account Activation Email',
+                body=activation_message_plaintext,
+                from_email=settings.EMAIL_HOST_USER,
+                to=[self.email]
+                )
 
-        email.attach_alternative(email_message_html, 'text/html')
-        sys.stdout.write('Sending Email...')
-        try:
-            email.send()
-            sys.stdout.write('Email sent successfully.')
-        except Exception:
-            sys.stdout.write('An error occurred!')
+            email.attach_alternative(activation_message_html, 'text/html')
+            sys.stdout.write('Sending Email...')
+            try:
+                email.send()
+                sys.stdout.write('Email sent successfully.')
+            except Exception:
+                sys.stdout.write('An error occurred!')
+        else:
+            response = requests.get('http://0.0.0.0:5000/send-activation-sms?phone-number=' +
+                                    self.person.phone_number +
+                                    '&eid=' + activate_user_token.eid +
+                                    '&token=' + activate_user_token.token.key)
+            print(response)
 
-    def send_password_confirm_email(self):
+    def send_password_confirm_email(self, is_sms):
         uid = urlsafe_base64_encode(force_bytes(self.id))
 
         ResetPasswordToken.objects.filter(uid=uid).delete()
@@ -74,7 +84,7 @@ class User(AbstractUser):
             'uid': reset_password_token.uid,
             'token': reset_password_token.token,
         }
-        from user.tasks import send_email
+        # from user.tasks import send_email
 
         # send_email.delay(self.id, context,
         #                  'user/user_reset_password.html',
@@ -84,20 +94,27 @@ class User(AbstractUser):
                                               context=context)
         email_message_plaintext = strip_tags(email_message_html)
 
-        email = EmailMultiAlternatives(
-            subject='Reset Password Email',
-            body=email_message_plaintext,
-            from_email=settings.EMAIL_HOST_USER,
-            to=[self.email]
-            )
+        if not is_sms:
+            email = EmailMultiAlternatives(
+                subject='Reset Password Email',
+                body=email_message_plaintext,
+                from_email=settings.EMAIL_HOST_USER,
+                to=[self.email]
+                )
 
-        email.attach_alternative(email_message_html, 'txt/html')
-        sys.stdout.write('Sending Email...')
-        try:
-            email.send()
-            sys.stdout.write('Email sent successfully.')
-        except Exception:
-            sys.stdout.write('An error occurred!')
+            email.attach_alternative(email_message_html, 'txt/html')
+            sys.stdout.write('Sending Email...')
+            try:
+                email.send()
+                sys.stdout.write('Email sent successfully.')
+            except Exception:
+                sys.stdout.write('An error occurred!')
+        else:
+            response = requests.get('http://0.0.0.0:5000/send-reset-password-sms?phone-number=' +
+                                    self.person.phone_number +
+                                    '&uid=' + reset_password_token.uid +
+                                    '&token=' + reset_password_token.token.key)
+            print(response)
 
     @classmethod
     def activate(cls, eid, token):
