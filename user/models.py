@@ -1,7 +1,4 @@
 from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import AbstractUser
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
@@ -14,17 +11,17 @@ from django.utils.html import strip_tags
 import sys
 import requests
 
-from rest_framework.authtoken.models import Token
 from model_utils.models import TimeStampedModel
 
-from kavenegar import *
+from .token import account_activation_token
 
 
 class User(AbstractUser):
+    email = models.EmailField(unique=True)
 
     def send_activation_link(self, is_sms):
         activate_user_token = ActivateUserToken(
-            token=Token.objects.create(user=self),
+            token=account_activation_token.make_token(self),
             eid=urlsafe_base64_encode(force_bytes(self.email)),
         )
         activate_user_token.save()
@@ -32,7 +29,7 @@ class User(AbstractUser):
         context = {
             'domain': settings.DOMAIN,
             'eid': activate_user_token.eid,
-            'token': activate_user_token.token.key,
+            'token': activate_user_token.token,
             'first_name': self.person.first_name
         }
         # from user.tasks import send_email
@@ -44,6 +41,7 @@ class User(AbstractUser):
         activation_message_html = render_to_string('user/user_activate_email.html',
                                                    context=context)
         activation_message_plaintext = strip_tags(activation_message_html)
+        sys.stdout.write(activation_message_plaintext)
 
         if not is_sms:
             email = EmailMultiAlternatives(
@@ -64,68 +62,19 @@ class User(AbstractUser):
             response = requests.get('http://0.0.0.0:5000/send-activation-sms?phone-number=' +
                                     self.person.phone_number +
                                     '&eid=' + activate_user_token.eid +
-                                    '&token=' + activate_user_token.token.key)
+                                    '&token=' + activate_user_token.token)
             print(response)
 
-    def send_password_confirm_email(self, is_sms):
-        uid = urlsafe_base64_encode(force_bytes(self.id))
+    # @classmethod
+    # def activate(cls, eid, token):
+    #     activate_user_token = get_object_or_404(ActivateUserToken,
+    #                                             eid=eid, token=token)
 
-        ResetPasswordToken.objects.filter(uid=uid).delete()
-        reset_password_token = ResetPasswordToken(
-            uid=uid,
-            token=Token.objects.create(user=self),
-            expiration_date=timezone.now() + timezone.timedelta(hours=24),
-        )
-        reset_password_token.save()
-
-        context = {
-            'domain': settings.DOMAIN,
-            'username': self.username,
-            'uid': reset_password_token.uid,
-            'token': reset_password_token.token,
-        }
-        # from user.tasks import send_email
-
-        # send_email.delay(self.id, context,
-        #                  'user/user_reset_password.html',
-        #                  'Reset Password Email')
-
-        email_message_html = render_to_string('user/user_reset_password.html',
-                                              context=context)
-        email_message_plaintext = strip_tags(email_message_html)
-
-        if not is_sms:
-            email = EmailMultiAlternatives(
-                subject='Reset Password Email',
-                body=email_message_plaintext,
-                from_email=settings.EMAIL_HOST_USER,
-                to=[self.email]
-                )
-
-            email.attach_alternative(email_message_html, 'txt/html')
-            sys.stdout.write('Sending Email...')
-            try:
-                email.send()
-                sys.stdout.write('Email sent successfully.')
-            except Exception:
-                sys.stdout.write('An error occurred!')
-        else:
-            response = requests.get('http://0.0.0.0:5000/send-reset-password-sms?phone-number=' +
-                                    self.person.phone_number +
-                                    '&uid=' + reset_password_token.uid +
-                                    '&token=' + reset_password_token.token.key)
-            print(response)
-
-    @classmethod
-    def activate(cls, eid, token):
-        activate_user_token = get_object_or_404(ActivateUserToken,
-                                                eid=eid, token=token)
-
-        email = urlsafe_base64_decode(eid).decode('utf-8')
-        user = cls.objects.get(email=email)
-        user.is_active = True
-        activate_user_token.delete()
-        user.save()
+    #     email = urlsafe_base64_decode(eid).decode('utf-8')
+    #     user = cls.objects.get(email=email)
+    #     user.is_active = True
+    #     activate_user_token.delete()
+    #     user.save()
 
 
 class Person(TimeStampedModel):
@@ -137,8 +86,8 @@ class Person(TimeStampedModel):
     birthdate = models.DateField(null=True)
     address = models.CharField(max_length=256)  # validator
     phone_number = models.CharField(max_length=32, null=True)
-    profile_image = models.ImageField(upload_to='media/profile_images',
-                                      null=True)
+    profile_image = models.ImageField(upload_to='profile_images',
+                                      null=True, default='profile_images/default.png')
 
     @property
     def is_complete(self):

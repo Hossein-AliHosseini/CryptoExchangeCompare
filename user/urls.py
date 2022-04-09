@@ -1,20 +1,18 @@
 from django.urls import path
+from django.conf.urls.static import static
 
 from .views import *
 
 urlpatterns = [
-    path('login', view=LoginAPIView.as_view(), name='login'),
-    path('is-active', view=IsActivatedAPIView.as_view(), name='is_active'),
-    path('signup', view=SignUpAPIView.as_view(), name='signup'),
-    path('activate/<slug:eid>/<slug:token>', view=ActivateAPIView.as_view(),
-         name='activate'),
-    path('logout', view=LogoutAPIView.as_view(), name='logout'),
-    path('resend-activation-link', view=ResendActivationEmailAPIView.as_view(),
-         name='resend'),
-    path('person', view=PersonAPIView.as_view(), name='person'),
-    path('password/change', ChangePasswordAPIView.as_view()),
-    path('password/reset', view=ResetPasswordAPIView.as_view(),
-         name='reset password'),
-    path('password/reset/confirm', view=ResetPasswordConfirmAPIView.as_view(),
-         name='confirm password'),
+    path('user/signup/', signup_view, name="signup"),
+    path('user/login/', login_view, name="login"),
+    path('user/home/', home_view, name="home"),
+    path('user/activate/<slug:eid>/<slug:token>',
+         activate, name='activate'),
+    path('user/change_password/', change_password_view,
+         name="change_password"),
+    path('user/logout/', logout_view, name='logout'),
+    path('user/profile/', profile_view, name="profile"),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

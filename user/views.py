@@ -1,197 +1,124 @@
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth import authenticate
-from django.utils import timezone
+from django.contrib.auth import (login,
+                                 logout,
+                                 update_session_auth_hash,
+                                 authenticate)
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.utils.http import urlsafe_base64_decode
-from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.hashers import make_password
+from django.contrib import messages
+from django.conf import settings
 
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.generics import GenericAPIView
-from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.renderers import TemplateHTMLRenderer
-
-from .models import Person, User, ResetPasswordToken
-from .serializers import *
+from .forms import CustomUserCreationForm, ProfileForm
+from .models import User
+from .token import account_activation_token
 
 
-class IsActivatedAPIView(GenericAPIView):
-    serializer_class = EmailSerializer
-
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        user = get_object_or_404(User, username=data['email'])
-
-        return Response(
-            data={'is_active': user.is_active},
-            status=status.HTTP_200_OK
-        )
-
-
-class SignUpAPIView(GenericAPIView):
-    queryset = Person.objects.all()
-    serializer_class = UserSerializer
-    # renderer_classes = [TemplateHTMLRenderer]
-    # template_name = 'user/signup.html'
-
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        # token = Token.objects.create(user=user)
-        # eid = urlsafe_base64_encode(force_bytes(user.email))
-        # aut = ActivateUserToken.objects.create(token=token, eid=eid)
-        user.send_activation_link(serializer.validated_data['send_sms'])
-        # User.activate(eid, token)
-
-        return Response(
-            data={'detail': _('Check your email for confirmation link')},
-            status=200
-        )
+def signup_view(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            user = User.objects.get(username=username)
+            user.is_active = False
+            send_sms = form.cleaned_data.get('send_sms')
+            user.send_activation_link(send_sms)
+            return HttpResponse('Check your Email to activate your account')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'user/signup.html', {'form': form})
 
 
-class ActivateAPIView(GenericAPIView):
-
-    def get(self, request, eid, token):
-        User.activate(eid, token)
-        return Response(data={'detail': _('Account Activated')},
-                        status=status.HTTP_200_OK)
-
-
-class LoginAPIView(GenericAPIView):
-    serializer_class = LoginSerializer
-
-    def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response(data={'data': serializer.data},
-                        status=status.HTTP_200_OK)
-
-    def get_serializer_context(self):
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self
-        }
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['context'] = self.get_serializer_context()
-        return self.serializer_class(*args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key})
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(username=username,
+                                password=password)
+            if user.is_active:
+                login(request, user)
+                return redirect('home')
+            else:
+                return HttpResponse('Please Activate your account first!')
+    else:
+        form = AuthenticationForm()
+    return render(request,
+                  'user/login.html',
+                  {'form': form})
 
 
-class LogoutAPIView(GenericAPIView):
-    queryset = Person.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        request.user.auth_token.delete()
-        return Response(status=status.HTTP_200_OK)
-
-
-class ResendActivationEmailAPIView(GenericAPIView):
-    serializer_class = EmailSerializer
-
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = get_object_or_404(User,
-                                     email=serializer.validated_data['email'])
-            user.send_activation_email()
-            return Response(
-                data={'detail': _('Check your email for confirmation link')},
-                status=200
-            )
-
-
-class PersonAPIView(GenericAPIView):
-    queryset = User.objects.all()
-    serializer_class = PersonSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
-
-    def get(self, request):
-        user = request.user
-        data = self.get_serializer(instance=user.person).data
-        return Response(data={'data': data,
-                              'token': Token.objects.get(user=user).key},
-                        status=status.HTTP_200_OK)
-
-    def put(self, request):
-        user = request.user
-        serializer = PersonSerializer(instance=user.person,
-                                      data=request.data,
-                                      partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            data={'data': serializer.data},
-            status=status.HTTP_200_OK,
-        )
-
-
-class ChangePasswordAPIView(GenericAPIView):
-    queryset = User.objects.all()
-    serializer_class = ChangePasswordSerializer
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            data={'detail': _('password changed successfully')},
-            status=200
-        )
-
-
-class ResetPasswordAPIView(GenericAPIView):
-    serializer_class = EmailSerializer
-
-    def post(self, request):
-        data = self.get_serializer(request.data).data
-
-        user = get_object_or_404(User, email=data['email'])
-        user.send_password_confirm_email()
-
-        return Response(
-            {'detail': _('Successfully Sent Reset Password Email')},
-            status=200)
-
-
-class ResetPasswordConfirmAPIView(GenericAPIView):
-    serializer_class = ResetPasswordConfirmSerializer
-
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        rs_token = get_object_or_404(ResetPasswordToken, uid=data['uid'],
-                                     token=data['token'])
-        duration = 24 * 60 * 60
-        if (timezone.now() - rs_token.expiration_date).total_seconds() > duration:
-            return Response({'error': 'Token Expired'}, status=400)
-
-        user = get_object_or_404(User,
-                                 id=urlsafe_base64_decode(data['uid']).
-                                 decode('utf-8'))
-        rs_token.delete()
-        user.password = make_password(data['new_password1'])
+def activate(request, eid, token):
+    try:
+        uid = urlsafe_base64_decode(eid).decode('utf-8')
+        user = User.objects.get(email=uid)
+    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    print(token)
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
         user.save()
-        return Response(data={'detail': _('Successfully Changed Password')},
-                        status=200)
+        return HttpResponse('Thank you for your email confirmation.\
+            Now you can login your account.')
+    else:
+        return HttpResponse('Activation link is invalid!')
+
+
+def change_password_view(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            form = PasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request,
+                                 'Your password was successfully updated!')
+                return redirect('change_password')
+            else:
+                messages.error(request, 'Please correct the error below.')
+        else:
+            form = PasswordChangeForm(request.user)
+        return render(request, 'user/change_password.html', {
+            'form': form
+        })
+    else:
+        return HttpResponse('Please Login first!')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('home')
+
+
+def profile_view(request):
+    if request.user.is_authenticated:
+        user = request.user
+        person = request.user.person
+        if request.method == "POST":
+            form = ProfileForm(request.POST)
+            if form.is_valid():
+                user.phone_number = form.cleaned_data['phone_number']
+                user.address = form.cleaned_data['address']
+                user.save()
+        else:
+            form = ProfileForm(initial={
+                'email': user.email,
+                'password': user.password,
+                'phone_number': person.phone_number,
+                'address': person.address,
+                'national_code': person.national_code,
+                'birth_date': person.birthdate
+            })
+        return render(request, 'user/profile.html',
+                      {'person': person,
+                       'form': form,
+                       'MEDIA_URL': settings.MEDIA_URL})
+    else:
+        return HttpResponse('Please login first...')
+
+
+def home_view(request):
+    return HttpResponse('Meow')

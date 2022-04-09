@@ -5,10 +5,16 @@
 {% block header %} Meow {% endblock %}
 
 {% block content %}
-  <h2>Sign up</h2>
-  <form ALIGN=CENTER method="post">
+  <h2>Profile</h2>
+<div ALIGN="center">
+<img src="{{ MEDIA_URL }}{{ person.profile_image }}" width="150" height="120">
+<br> <br>
+{{ person.first_name }} {{ person.last_name }}
+<br> <br>
+<form ALIGN=CENTER method="post">
     {% csrf_token %}
     {% bootstrap_form form %}
-    <button type="submit">Sign up</button>
-  </form>
+    <button type="submit">Submit</button>
+</form>
+</div>
 {% endblock %}

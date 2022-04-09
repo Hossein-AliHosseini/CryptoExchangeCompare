@@ -1,0 +1,16 @@
+<html>
+{% load static %}
+{% load bootstrap4 %}
+{% load render_table from django_tables2 %}
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Crypto Exchange Compare{% endblock %}</title>
+</head>
+<body>
+  <h1 ALIGN="center">{% block header %}{% endblock %}</h1>
+  <main>
+    {% block content %}
+    {% endblock %}
+  </main>
+</body>
+</html>

@@ -47,9 +47,8 @@ class Status:
         (SUCCESS, 'Success'),
     )
 
-# Exchange Provider
 
-class Exchange(TimeStampedModel):
+class ExchangeProvider(TimeStampedModel):
     name = models.CharField(max_length=16,
                             default=ExchangeChoice.NOBITEX,
                             choices=ExchangeChoice.TYPES,)
