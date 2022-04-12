@@ -41,7 +41,8 @@ DEFAULT_APPS = [
 
 CREATED_APPS = [
     'user',
-    'exchange'
+    'exchange',
+    'home',
 ]
 
 THIRD_PARTY_APPS = [

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+{% block header %}
+    {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}">Profile</a>
+    {% endif %}
+    <a href="{% url 'login' %}">Login</a>
+    <a href="{% url 'signup' %}">Get Started</a>
+    <h1 align="center">Crypto Exchange Compare</h1>
+    <h4 align="center">Trade with Open Eyes...</h4>
+    <br><br>
+    <div ALIGN="center">
+    <h2 ALIGN="center">Create your account to get best offers to Trade</h2>
+    <a href="{% url 'signup' %}">Get Started</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+  <h3>Nobitex Markets</h3>
+    <img src="{{ BTC_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>BTC:</strong> {{ nobitex_btc }}
+    <br><br>
+    <img src="{{ ETH_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>ETH:</strong> {{ nobitex_eth }}
+    <br><br>
+    <img src="{{ ADA_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>ADA:</strong> {{ nobitex_ada }}
+    <br><br>
+    <img src="{{ SHIB_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>SHIB:</strong> {{ nobitex_shib }}
+    <br><br>
+    <img src="{{ DOGE_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>DOGE:</strong> {{ nobitex_doge }}
+    <br><br><br><br>
+    <h3>Wallex Markets</h3>
+    <img src="{{ BTC_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>BTC:</strong> {{ wallex_btc }}
+    <br><br>
+    <img src="{{ ETH_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>ETH:</strong> {{ wallex_eth }}
+    <br><br>
+    <img src="{{ ADA_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>ADA:</strong> {{ wallex_ada }}
+    <br><br>
+    <img src="{{ SHIB_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>SHIB:</strong> {{ wallex_shib }}
+    <br><br>
+    <img src="{{ DOGE_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>DOGE:</strong> {{ wallex_doge }}
+    <br><br><br><br>
+    <h3>Phinix Markets</h3>
+    <img src="{{ BTC_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>BTC:</strong> {{ phinix_btc }}
+    <br><br>
+    <img src="{{ ETH_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>ETH:</strong> {{ phinix_eth }}
+    <br><br>
+    <img src="{{ DOGE_URL }}" alt="BTC" height="30" width="30">
+    &emsp;<strong>DOGE:</strong> {{ phinix_doge }}
+{% endblock %}

@@ -19,18 +19,16 @@ class ExchangeChoice:
 
 class Crypto:
     BITCOIN = 'BTC'
-    ETHERRUM = 'ETH'
+    ETHEREUM = 'ETH'
     SHIBA = 'SHIB'
     CARDANO = 'ADA'
-    TRON = 'TRX'
     DOGECOIN = 'DOGE'
 
     TYPES = (
         (BITCOIN, 'BTC'),
-        (ETHERRUM, 'ETH'),
+        (ETHEREUM, 'ETH'),
         (SHIBA, 'SHIB'),
         (CARDANO, 'ADA'),
-        (TRON, 'TRX'),
         (DOGECOIN, 'DOGE'),
     )
 
@@ -51,7 +49,7 @@ class Status:
 class ExchangeProvider(TimeStampedModel):
     name = models.CharField(max_length=16,
                             default=ExchangeChoice.NOBITEX,
-                            choices=ExchangeChoice.TYPES,)
+                            choices=ExchangeChoice.TYPES, )
     obtain_token_command = models.CharField(max_length=256,
                                             null=True, blank=True)
     place_bid_command = models.CharField(max_length=256,
@@ -69,6 +67,9 @@ class Account(TimeStampedModel):
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
     token = models.CharField(max_length=128, null=True)
+    exchange_email = models.EmailField(max_length=128, null=True)
+    exchange_phone_number = models.CharField(max_length=16, null=True)
+    exchange_password = models.CharField(max_length=128, null=True)
 
     class Meta:
         unique_together = ('owner', 'exchange')
@@ -84,7 +85,7 @@ class Transaction(TimeStampedModel):
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
     status = models.CharField(max_length=16,
-                              choices=Status.TYPES,)
+                              choices=Status.TYPES, )
     volume = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()

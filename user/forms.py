@@ -45,9 +45,18 @@ class CustomUserChangeForm(UserChangeForm):
 
 
 class ProfileForm(forms.Form):
-    email = forms.EmailField(disabled=True)
-    password = forms.CharField(widget=forms.PasswordInput, disabled=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Or to set READONLY
+        self.fields["email"].widget.attrs["readonly"] = True
+        self.fields["password"].widget.attrs["readonly"] = True
+        self.fields["national_code"].widget.attrs["readonly"] = True
+        self.fields["birth_date"].widget.attrs["readonly"] = True
+
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput, required=False)
     phone_number = forms.IntegerField()
-    national_code = forms.IntegerField(disabled=True)
+    national_code = forms.IntegerField()
     address = forms.CharField()
-    birth_date = forms.DateField(disabled=True)
+    birth_date = forms.DateField()

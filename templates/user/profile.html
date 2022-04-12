@@ -14,6 +14,10 @@
 <form ALIGN=CENTER method="post">
     {% csrf_token %}
     {% bootstrap_form form %}
+    Accounts: <button><a href="{% url 'account' %}">Manage Accounts</a></button>
+    <br>
+    Profits and Losses: <button><a href="{% url 'pandl' %}">Manage P/Ls</a></button>
+    <br>
     <button type="submit">Submit</button>
 </form>
 </div>

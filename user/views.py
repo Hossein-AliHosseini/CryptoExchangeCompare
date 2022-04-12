@@ -100,9 +100,9 @@ def profile_view(request):
         if request.method == "POST":
             form = ProfileForm(request.POST)
             if form.is_valid():
-                user.phone_number = form.cleaned_data['phone_number']
-                user.address = form.cleaned_data['address']
-                user.save()
+                person.phone_number = form.cleaned_data['phone_number']
+                person.address = form.cleaned_data['address']
+                person.save()
         else:
             form = ProfileForm(initial={
                 'email': user.email,
@@ -118,7 +118,3 @@ def profile_view(request):
                        'MEDIA_URL': settings.MEDIA_URL})
     else:
         return HttpResponse('Please login first...')
-
-
-def home_view(request):
-    return HttpResponse('Meow')
