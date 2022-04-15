@@ -23,6 +23,7 @@ class Crypto:
     SHIBA = 'SHIB'
     CARDANO = 'ADA'
     DOGECOIN = 'DOGE'
+    TETHER = "USDT"
 
     TYPES = (
         (BITCOIN, 'BTC'),
@@ -30,6 +31,7 @@ class Crypto:
         (SHIBA, 'SHIB'),
         (CARDANO, 'ADA'),
         (DOGECOIN, 'DOGE'),
+        (TETHER, 'USDT'),
     )
 
 
@@ -43,6 +45,15 @@ class Status:
         (PENDING, 'Pending'),
         (FAILED, 'Failed'),
         (SUCCESS, 'Success'),
+    )
+
+
+class TransactionType:
+    BUY = 'Buy'
+    SELL = 'Sell'
+    TYPES = (
+        (BUY, 'Buy'),
+        (SELL, 'Sell'),
     )
 
 
@@ -67,6 +78,7 @@ class Account(TimeStampedModel):
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
     token = models.CharField(max_length=128, null=True)
+    wallet_address = models.CharField(max_length=128, null=True)
     exchange_email = models.EmailField(max_length=128, null=True)
     exchange_phone_number = models.CharField(max_length=16, null=True)
     exchange_password = models.CharField(max_length=128, null=True)
@@ -78,14 +90,23 @@ class Account(TimeStampedModel):
 class Transaction(TimeStampedModel):
     customer = models.ForeignKey(User, on_delete=models.CASCADE,
                                  related_name='transaction')
-    crypto = models.CharField(max_length=6,
-                              choices=Crypto.TYPES,
-                              default=Crypto.BITCOIN)
+    opposite_transaction = models.OneToOneField('exchange.Transaction', on_delete=models.CASCADE,
+                                                related_name='opposite', null=True)
+    base_crypto = models.CharField(max_length=6,
+                                   choices=Crypto.TYPES,
+                                   default=Crypto.BITCOIN)
+    quote_crypto = models.CharField(max_length=6,
+                                    choices=Crypto.TYPES,
+                                    default=Crypto.TETHER)
     exchange = models.CharField(max_length=10,
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
     status = models.CharField(max_length=16,
                               choices=Status.TYPES, )
+    completion_date = models.DateTimeField(null=True)
+    type = models.CharField(max_length=8,
+                            choices=TransactionType.TYPES,
+                            null=True)
     volume = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()

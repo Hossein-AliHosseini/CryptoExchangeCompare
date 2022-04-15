@@ -18,6 +18,7 @@
 {% endblock %}
 
 {% block content %}
+    {% csrf_token %}
   <h3>Nobitex Markets</h3>
     <img src="{{ BTC_URL }}" alt="BTC" height="30" width="30">
     &emsp;<strong>BTC:</strong> {{ nobitex_btc }}
