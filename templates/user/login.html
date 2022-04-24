@@ -2,13 +2,14 @@
 {% load bootstrap4 %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-{% block header %} Meow {% endblock %}
-
 {% block content %}
+    <body class="row justify-content-center">
   <h2>Login</h2>
   <form ALIGN=CENTER method="post">
     {% csrf_token %}
     {% bootstrap_form form %}
-    <button type="submit">Sign up</button>
+    <button type="submit">Login</button>
   </form>
+    <br><br><br><br><br><br><br><br>
+    </body>
 {% endblock %}

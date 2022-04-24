@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
 {% load bootstrap4 %}
+{% load render_table from django_tables2 %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-{% block header %} Meow {% endblock %}
-
 {% block content %}
-  <h2>Change Password</h2>
+    <br><br>
+    <body class="row justify-content-center">
+  <h2>Edit your Account</h2>
   <form ALIGN=CENTER method="post">
     {% csrf_token %}
     {% bootstrap_form form %}
-    <button type="submit">Change</button>
+    <button type="submit">Edit</button>
   </form>
+    </body>
 {% endblock %}

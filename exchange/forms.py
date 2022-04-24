@@ -8,6 +8,8 @@ class AccountForm(forms.Form):
     exchange_email = forms.EmailField(max_length=128)
     exchange_phone_number = forms.IntegerField(max_value=99999999999)
     exchange_password = forms.CharField(max_length=128)
+    token = forms.CharField(max_length=128, help_text="Optional", required=False)
+    wallet_address = forms.CharField(max_length=128, help_text="Optional", required=False)
 
 
 class ProfitAndLossForm(forms.Form):

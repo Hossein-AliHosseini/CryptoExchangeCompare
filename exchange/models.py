@@ -60,7 +60,7 @@ class TransactionType:
 class ExchangeProvider(TimeStampedModel):
     name = models.CharField(max_length=16,
                             default=ExchangeChoice.NOBITEX,
-                            choices=ExchangeChoice.TYPES, )
+                            choices=ExchangeChoice.TYPES,)
     obtain_token_command = models.CharField(max_length=256,
                                             null=True, blank=True)
     place_bid_command = models.CharField(max_length=256,
@@ -80,7 +80,7 @@ class Account(TimeStampedModel):
     token = models.CharField(max_length=128, null=True)
     wallet_address = models.CharField(max_length=128, null=True)
     exchange_email = models.EmailField(max_length=128, null=True)
-    exchange_phone_number = models.CharField(max_length=16, null=True)
+    exchange_phone_number = models.CharField(max_length=32, null=True)
     exchange_password = models.CharField(max_length=128, null=True)
 
     class Meta:
@@ -92,21 +92,20 @@ class Transaction(TimeStampedModel):
                                  related_name='transaction')
     opposite_transaction = models.OneToOneField('exchange.Transaction', on_delete=models.CASCADE,
                                                 related_name='opposite', null=True)
-    base_crypto = models.CharField(max_length=6,
-                                   choices=Crypto.TYPES,
-                                   default=Crypto.BITCOIN)
-    quote_crypto = models.CharField(max_length=6,
-                                    choices=Crypto.TYPES,
-                                    default=Crypto.TETHER)
+    crypto = models.CharField(max_length=6,
+                              choices=Crypto.TYPES,
+                              default=Crypto.BITCOIN)
     exchange = models.CharField(max_length=10,
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
     status = models.CharField(max_length=16,
-                              choices=Status.TYPES, )
+                              choices=Status.TYPES,)
     completion_date = models.DateTimeField(null=True)
     type = models.CharField(max_length=8,
                             choices=TransactionType.TYPES,
                             null=True)
-    volume = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()
+
+    def __str__(self):
+        return str(self.id)

@@ -4,9 +4,8 @@ from django.contrib.auth import (login,
                                  authenticate)
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.utils.http import urlsafe_base64_decode
-from django.contrib import messages
 from django.conf import settings
 
 from .forms import CustomUserCreationForm, ProfileForm
@@ -15,40 +14,46 @@ from .token import account_activation_token
 
 
 def signup_view(request):
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            user = User.objects.get(username=username)
-            user.is_active = False
-            send_sms = form.cleaned_data.get('send_sms')
-            user.send_activation_link(send_sms)
-            return HttpResponse('Check your Email to activate your account')
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
+            form = CustomUserCreationForm(request.POST)
+            if form.is_valid():
+                form.save()
+                username = form.cleaned_data.get('username')
+                user = User.objects.get(username=username)
+                user.is_active = False
+                send_sms = form.cleaned_data.get('send_sms')
+                user.send_activation_link(send_sms)
+                return HttpResponse('Check your Email to activate your account')
+        else:
+            form = CustomUserCreationForm()
+        return render(request, 'user/signup.html', {'form': form})
     else:
-        form = CustomUserCreationForm()
-    return render(request, 'user/signup.html', {'form': form})
+        return HttpResponse("You have signed up before!")
 
 
 def login_view(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            user = authenticate(username=username,
-                                password=password)
-            if user.is_active:
-                login(request, user)
-                return redirect('home')
-            else:
-                return HttpResponse('Please Activate your account first!')
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
+            form = AuthenticationForm(data=request.POST)
+            if form.is_valid():
+                user = form.get_user()
+                username = form.cleaned_data['username']
+                password = form.cleaned_data['password']
+                user = authenticate(username=username,
+                                    password=password)
+                if user.is_active:
+                    login(request, user)
+                    return redirect('home')
+                else:
+                    return HttpResponse('Please Activate your account first!')
+        else:
+            form = AuthenticationForm()
+        return render(request,
+                      'user/login.html',
+                      {'form': form})
     else:
-        form = AuthenticationForm()
-    return render(request,
-                  'user/login.html',
-                  {'form': form})
+        return HttpResponse('You have logged in before!')
 
 
 def activate(request, eid, token):
@@ -67,25 +72,19 @@ def activate(request, eid, token):
         return HttpResponse('Activation link is invalid!')
 
 
-def change_password_view(request):
+def password_reset_request(request):
     if request.user.is_authenticated:
-        if request.method == 'POST':
-            form = PasswordChangeForm(request.user, request.POST)
-            if form.is_valid():
-                user = form.save()
-                update_session_auth_hash(request, user)
-                messages.success(request,
-                                 'Your password was successfully updated!')
-                return redirect('change_password')
-            else:
-                messages.error(request, 'Please correct the error below.')
-        else:
-            form = PasswordChangeForm(request.user)
-        return render(request, 'user/change_password.html', {
-            'form': form
-        })
+        if request.method == "POST":
+            password_reset_form = PasswordResetForm(request.POST)
+            if password_reset_form.is_valid():
+                email = password_reset_form.cleaned_data['email']
+                associated_users = User.objects.get(email=email)
+                associated_users.send_change_password_link()
+        password_reset_form = PasswordResetForm()
+        return render(request=request, template_name="user/password_reset.html",
+                      context={"password_reset_form": password_reset_form})
     else:
-        return HttpResponse('Please Login first!')
+        return HttpResponse('Please login first...')
 
 
 def logout_view(request):

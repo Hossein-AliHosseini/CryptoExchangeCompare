@@ -2,9 +2,8 @@
 {% load bootstrap4 %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-{% block header %} Meow {% endblock %}
-
 {% block content %}
+    <body class="row justify-content-center">
   <h2>Profile</h2>
 <div ALIGN="center">
 <img src="{{ MEDIA_URL }}{{ person.profile_image }}" width="150" height="120">
@@ -21,4 +20,5 @@
     <button type="submit">Submit</button>
 </form>
 </div>
+    </body>
 {% endblock %}

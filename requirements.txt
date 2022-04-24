@@ -19,3 +19,5 @@ django-sms
 twilio==7.8.0
 kavenegar
 six
+django-crispy-forms==1.14.0
+django-redis==5.2.0

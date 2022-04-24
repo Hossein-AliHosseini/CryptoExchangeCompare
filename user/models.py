@@ -1,6 +1,8 @@
+import time
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
 from django.conf import settings
@@ -10,6 +12,7 @@ from django.utils.html import strip_tags
 
 import sys
 import requests
+from datetime import datetime, timedelta
 
 from model_utils.models import TimeStampedModel
 
@@ -65,16 +68,38 @@ class User(AbstractUser):
                                     '&token=' + activate_user_token.token)
             print(response)
 
-    # @classmethod
-    # def activate(cls, eid, token):
-    #     activate_user_token = get_object_or_404(ActivateUserToken,
-    #                                             eid=eid, token=token)
+    def send_change_password_link(self):
+        reset_password_token = ResetPasswordToken(
+            token=account_activation_token.make_token(self),
+            uid=urlsafe_base64_encode(force_bytes(self.email)),
+            expiration_date=datetime.now() + timedelta(days=1)
+        )
+        reset_password_token.save()
 
-    #     email = urlsafe_base64_decode(eid).decode('utf-8')
-    #     user = cls.objects.get(email=email)
-    #     user.is_active = True
-    #     activate_user_token.delete()
-    #     user.save()
+        context = {
+            'domain': settings.DOMAIN,
+            'eid': reset_password_token.uid,
+            'token': reset_password_token.token,
+            'first_name': self.person.first_name
+        }
+        reset_password_message_html = render_to_string('user/user_reset_password.html',
+                                                   context=context)
+        reset_password_message_plaintext = strip_tags(reset_password_message_html)
+        sys.stdout.write(reset_password_message_plaintext)
+        email = EmailMultiAlternatives(
+            subject='Reset Password Email',
+            body=reset_password_message_plaintext,
+            from_email=settings.EMAIL_HOST_USER,
+            to=[self.email]
+        )
+
+        email.attach_alternative(reset_password_message_html, 'text/html')
+        sys.stdout.write('Sending Email...')
+        try:
+            email.send()
+            sys.stdout.write('Email sent successfully.')
+        except Exception:
+            sys.stdout.write('An error occurred!')
 
 
 class Person(TimeStampedModel):

@@ -3,11 +3,6 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
 {% block header %}
-    {% if user.is_authenticated %}
-        <a href="{% url 'profile' %}">Profile</a>
-    {% endif %}
-    <a href="{% url 'login' %}">Login</a>
-    <a href="{% url 'signup' %}">Get Started</a>
     <h1 align="center">Crypto Exchange Compare</h1>
     <h4 align="center">Trade with Open Eyes...</h4>
     <br><br>
@@ -18,6 +13,10 @@
 {% endblock %}
 
 {% block content %}
+    <body class="row justify-content-center">
+
+    <br><br><br>
+    <div ALIGN="center">
     {% csrf_token %}
   <h3>Nobitex Markets</h3>
     <img src="{{ BTC_URL }}" alt="BTC" height="30" width="30">
@@ -60,4 +59,6 @@
     <br><br>
     <img src="{{ DOGE_URL }}" alt="BTC" height="30" width="30">
     &emsp;<strong>DOGE:</strong> {{ phinix_doge }}
+    </div>
+    </body>
 {% endblock %}
