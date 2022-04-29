@@ -70,8 +70,8 @@ def create_transaction():
         )
         sample_transaction.save()
     for _ in range(0, 20, 2):
-        Transaction.objects.all()[_].opposite_transaction = Transaction.objects.all()[_+1]
-        Transaction.objects.all()[_+1].opposite_transaction = Transaction.objects.all()[_]
+        Transaction.objects.all()[_].dual_transaction = Transaction.objects.all()[_+1]
+        Transaction.objects.all()[_+1].dual_transaction = Transaction.objects.all()[_]
 
 
 create_user()

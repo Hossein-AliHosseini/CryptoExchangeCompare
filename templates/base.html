@@ -25,37 +25,6 @@
 </head>
 <body>
   <h1 ALIGN="center">{% block header %}{% endblock %}</h1>
-{#  <div class="row">#}
-{#    <div ALIGN="left" class="dropdown">#}
-{#        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">#}
-{#          Base Menu#}
-{#        </button>#}
-{#        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">#}
-{#          <a class="dropdown-item" href="{% url 'home' %}">Home</a>#}
-{#          {% if user.is_authenticated %}#}
-{#          <a class="dropdown-item" href="{% url 'password_reset' %}">Change Password</a>#}
-{#          <a class="dropdown-item" href="{% url 'profile' %}">Profile</a>#}
-{#          <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>#}
-{#          {% else %}#}
-{#          <a class="dropdown-item" href="{% url 'login' %}">Login</a>#}
-{#          <a class="dropdown-item" href="{% url 'signup' %}">Sign Up</a>#}
-{#          {% endif %}#}
-{#        </div>#}
-{#      </div>#}
-{#        {% if user.is_authenticated %}#}
-{#      <div class="dropdown">#}
-{#        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">#}
-{#          Exchange Menu#}
-{#        </button>#}
-{#        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">#}
-{#          <a class="dropdown-item" href="{% url 'transaction' %}">Transactions</a>#}
-{#          <a class="dropdown-item" href="{% url 'account' %}">Manage Accounts</a>#}
-{#          <a class="dropdown-item" href="{% url 'pandl' %}">Manage Profit and Loss</a>#}
-{#          <a class="dropdown-item" href="{% url 'orderbooks' %}">Accumulative Orderbooks</a>#}
-{#        </div>#}
-{#      </div>#}
-{#        {% endif %}#}
-{#  </div>#}
 
   <div class="full-width">
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -90,6 +59,7 @@
           <a class="dropdown-item" href="{% url 'account' %}">Manage Accounts</a>
           <a class="dropdown-item" href="{% url 'pandl' %}">Manage Profit and Loss</a>
           <a class="dropdown-item" href="{% url 'orderbooks' %}">Accumulative Orderbooks</a>
+          <a class="dropdown-item" href="{% url 'choices' %}">Trade</a>
         </div>
       </li>
         {% if user.is_authenticated %}

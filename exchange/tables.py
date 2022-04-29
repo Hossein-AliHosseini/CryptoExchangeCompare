@@ -5,8 +5,11 @@ from .models import Transaction, Account
 
 
 class TransactionTable(tables.Table):
+    dual_price = tables.Column(accessor='dual_transaction.price',
+                               verbose_name='Dual transaction price')
+
     class Meta:
-        exclude = ['modified', ]
+        exclude = ['modified', 'customer', ]
         model = Transaction
         order_by = 'completion_date'
         template_name = 'django_tables2/bootstrap4.html'

@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ExchangeChoice, Crypto
+from .models import ExchangeChoice, Crypto, TransactionType
 
 
 class AccountForm(forms.Form):
@@ -26,3 +26,16 @@ class ProfitAndLossForm(forms.Form):
 
 class ChoiceExchangeForm(forms.Form):
     currency = forms.ChoiceField(choices=Crypto.TYPES)
+
+
+class TradeForm(forms.Form):
+    exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES, disabled=True)
+    crypto = forms.ChoiceField(choices=Crypto.TYPES, disabled=True)
+    size = forms.FloatField()
+    price = forms.FloatField()
+    type = forms.ChoiceField(choices=TransactionType.TYPES)
+
+
+class ChoiceForm(forms.Form):
+    exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES)
+    crypto = forms.ChoiceField(choices=Crypto.TYPES)

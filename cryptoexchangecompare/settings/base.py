@@ -52,6 +52,8 @@ THIRD_PARTY_APPS = [
     'django_tables2',
     'django_celery_results',
     'corsheaders',
+    'crispy_forms',
+    # 'django_celery_beat',
 ]
 
 
@@ -98,7 +100,7 @@ AUTHENTICATION_BACKENDS = [
 
 SMS_BACKEND = 'sms.backends.console.SmsBackend'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'email@gmail.com'
@@ -124,6 +126,18 @@ DATABASES = {
         'PORT': '5432'
     }
 }
+
+CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://redis:6379/",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }
+
+CACHE_TTL = 60
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators

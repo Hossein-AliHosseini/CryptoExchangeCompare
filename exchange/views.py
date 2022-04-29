@@ -1,12 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.core.cache import cache
-
+from django.template import loader
 
 from .tables import TransactionTable, AccountTable, AsksTable, BidsTable
-from .models import Transaction, Account, TransactionType, Status
-from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm
+from .models import Transaction, Account, TransactionType, Status, ExchangeChoice
+from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm, TradeForm, ChoiceForm
 
 import requests
 import json
@@ -14,6 +14,7 @@ import json
 
 def transaction_view(request):
     if request.user.is_authenticated:
+        # todo: update transactions status
         queryset = Transaction.objects.filter(customer=request.user)
         table = TransactionTable(queryset)
         table.paginate(page=request.GET.get('page', 1), per_page=10)
@@ -41,6 +42,36 @@ def exchange_account_view(request):
                     token=form.cleaned_data['token'],
                     wallet_address=form.cleaned_data['wallet_address']
                 )
+                if account.token == '':
+                    if account.exchange == str(ExchangeChoice.NOBITEX):
+                        url = 'https://api.nobitex.ir/auth/login/'
+
+                        payload = json.dumps({
+                            'username': account.exchange_email,
+                            'password': account.exchange_password,
+                            "captcha": "api"
+                        })
+                        headers = {
+                            "Content-Type": "application/json"
+                        }
+
+                        response = requests.request("POST", url, headers=headers, data=payload).json()
+                        if response['status'] == 'success':
+                            account.token = response['key']
+                    elif account.exchange == str(ExchangeChoice.PHINIX):
+                        url = "https://api.phinix.ir/auth/login"
+
+                        payload = json.dumps({
+                            "mobile_number": str(account.exchange_phone_number),
+                            "password": account.exchange_password
+                        })
+                        headers = {
+                            'Content-Type': 'application/json'
+                        }
+
+                        response = requests.request("POST", url, headers=headers, data=payload).json()
+                        if response['success']:
+                            account.token = response['result']['token']
         else:
             form = AccountForm()
         return render(request, 'exchange/account.html', {'form': form,
@@ -49,7 +80,6 @@ def exchange_account_view(request):
 
 def account_edit_view(request, pk):
     account = Account.objects.get(pk=pk)
-    user = request.user
     if request.method == "POST":
         form = AccountForm(request.POST)
         if form.is_valid():
@@ -74,16 +104,17 @@ def profitandloss_view(request):
         if form.is_valid():
             if not form.cleaned_data['ranged_show']:
                 queryset = Transaction.objects.filter(customer=request.user,
-                                                      opposite_transaction__isnull=False,
+                                                      dual_transaction__isnull=False,
                                                       status=Status.SUCCESS,
-                                                      opposite_transaction__status=Status.SUCCESS)
+                                                      dual_transaction__status=Status.SUCCESS)
             else:
                 queryset = Transaction.objects.filter(customer=request.user,
                                                       completion_date__gte=form.cleaned_data['range_start'],
                                                       completion_date__lte=form.cleaned_data['range_end'],
-                                                      opposite_transaction__isnull=False,
+                                                      dual_transaction__isnull=False,
                                                       status=Status.SUCCESS,
-                                                      opposite_transaction__status=Status.SUCCESS)
+                                                      dual_transaction__status=Status.SUCCESS)
+            # queryset.annotate(profit_by_opposite=F('price')-F('dual_transaction__price'))
             table = TransactionTable(queryset)
             table.paginate(page=request.GET.get('page', 1), per_page=10)
             # celery task below
@@ -123,3 +154,102 @@ def orderbooks_view(request):
     else:
         form = ChoiceExchangeForm()
         return render(request, 'exchange/orderbooks.html', {'form': form})
+
+
+def trade_view(request, currency, market):
+    if not request.user.is_authenticated:
+        return HttpResponse('Please login first...')
+    asks = cache.get(currency + str(market).lower() + 'ask')
+    bids = cache.get(currency + str(market).lower() + 'bid')
+    bids_table = BidsTable(bids)
+    asks_table = AsksTable(asks)
+    if request.method == 'POST':
+        form = TradeForm(request.POST)
+        if form.is_valid():
+            exchange = form.cleaned_data['exchange']
+            crypto = form.cleaned_data['crypto']
+            size = form.cleaned_data['size']
+            price = form.cleaned_data['price']
+            trade_type = form.cleaned_data['type']
+
+            account = Account.objects.get(owner=request.user, exchange=exchange)
+            if exchange == str(ExchangeChoice.NOBITEX):
+                url = "https://api.nobitex.ir/market/orders/add"
+                payload = json.dumps({
+                    "type": str(trade_type).lower(),
+                    "srcCurrency": str(crypto).lower(),
+                    "dstCurrency": 'usdt',
+                    'amount': str(size),
+                    "price": price
+                })
+                headers = {
+                    "Authorization": "Token " + account.token,
+                    "content-type": "application/json"
+                }
+
+                response = requests.request("POST", url, headers=headers, data=payload).json()
+                status = response['status']
+                message = "The operation was successful"
+                if status == 'failed':
+                    message = response['message']
+                print(response)
+            else:
+                url = 'https://api.' + exchange.lower() + '.ir/v1/account/orders'
+                payload = json.dumps({
+                    "price": str(price),
+                    "quantity": str(size),
+                    "side": trade_type.lower(),
+                    "symbol": crypto + "USDT",
+                    "type": "market"
+                })
+                headers = {
+                    'Authorization': 'Bearer ' + account.token,
+                    'Content-Type': 'application/json'
+                }
+
+                response = requests.request("POST", url, headers=headers, data=payload).json()
+                status = response['success']
+                message = response['message']
+            if status or status == 'ok':
+                transaction = Transaction.objects.create(customer=request.user,
+                                                         crypto=crypto,
+                                                         exchange=exchange,
+                                                         status=Status.PENDING,
+                                                         type=trade_type,
+                                                         size=size,
+                                                         price=price)
+                if trade_type is TransactionType.BUY:
+                    dual = Transaction.objects.filter(type=TransactionType.SELL, customer=request.user). \
+                        order_by('-created')[0]
+                    dual.dual_transaction = transaction
+                    transaction.dual_transaction = dual
+            return render(request, 'exchange/trade.html', {'form': form,
+                                                           'status': status,
+                                                           'message': message,
+                                                           'asks': asks_table,
+                                                           'bids': bids_table})
+    else:
+        form = TradeForm(initial={
+            'crypto': currency,
+            'exchange': str(market).capitalize()
+        })
+        return render(request, 'exchange/trade.html', {'form': form,
+                                                       'status': '',
+                                                       'message': '',
+                                                       'asks': asks_table,
+                                                       'bids': bids_table})
+
+
+def choice_details(request):
+    if not request.user.is_authenticated:
+        return HttpResponse('Please login first...')
+    if request.method == "POST":
+        form = ChoiceForm(request.POST)
+        if form.is_valid():
+            exchange = form.cleaned_data['exchange']
+            crypto = form.cleaned_data['crypto']
+            return redirect('/exchange/trade/' + crypto + '/' + str(exchange).lower())
+
+    else:
+        form = ChoiceForm()
+        return render(request, 'exchange/choice.html', {'form': form})

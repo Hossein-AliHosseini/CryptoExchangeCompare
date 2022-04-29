@@ -77,8 +77,8 @@ class Account(TimeStampedModel):
     exchange = models.CharField(max_length=10,
                                 choices=ExchangeChoice.TYPES,
                                 default=ExchangeChoice.NOBITEX)
-    token = models.CharField(max_length=128, null=True)
-    wallet_address = models.CharField(max_length=128, null=True)
+    token = models.CharField(max_length=128, blank=True)
+    wallet_address = models.CharField(max_length=128, blank=True)
     exchange_email = models.EmailField(max_length=128, null=True)
     exchange_phone_number = models.CharField(max_length=32, null=True)
     exchange_password = models.CharField(max_length=128, null=True)
@@ -90,8 +90,8 @@ class Account(TimeStampedModel):
 class Transaction(TimeStampedModel):
     customer = models.ForeignKey(User, on_delete=models.CASCADE,
                                  related_name='transaction')
-    opposite_transaction = models.OneToOneField('exchange.Transaction', on_delete=models.CASCADE,
-                                                related_name='opposite', null=True)
+    dual_transaction = models.OneToOneField('exchange.Transaction', on_delete=models.CASCADE,
+                                            related_name='dual', null=True)
     crypto = models.CharField(max_length=6,
                               choices=Crypto.TYPES,
                               default=Crypto.BITCOIN)
@@ -104,6 +104,7 @@ class Transaction(TimeStampedModel):
     type = models.CharField(max_length=8,
                             choices=TransactionType.TYPES,
                             null=True)
+    transaction_fee = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()
 

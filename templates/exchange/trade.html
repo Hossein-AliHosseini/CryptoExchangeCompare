@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+{% load render_table from django_tables2 %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+{% block content %}
+        <br><br><br>
+    <h2>Trade</h2>
+        <h3>Bids</h3>
+    {% render_table bids %}
+        <h3>Asks</h3>
+    {% render_table asks %}
+        <div class="row justify-content-center">
+  <form ALIGN=CENTER method="post">
+    {% csrf_token %}
+    {% bootstrap_form form %}
+    <button type="submit">Submit</button>
+  </form>
+    </div>
+    <p align="center">Status: {{ status }}</p>
+    <p align="center">Message: {{ message }}</p>
+{% endblock %}
