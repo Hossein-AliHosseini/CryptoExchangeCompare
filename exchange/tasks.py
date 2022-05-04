@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
 
-from .models import Crypto, Account, ExchangeChoice
+from .models import Transaction, Account, ExchangeChoice, Status
 
 CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
 
@@ -97,8 +97,10 @@ def update_tokens():
             }
 
             response = requests.request("POST", url, headers=headers, data=payload).json()
-            if response['status'] == 'success':
+            print(response)
+            if 'status' in response and response['status'] == 'success':
                 account.token = response['key']
+                account.save()
         elif account.exchange == str(ExchangeChoice.PHINIX):
             url = "https://api.phinix.ir/auth/login"
 
@@ -113,3 +115,88 @@ def update_tokens():
             response = requests.request("POST", url, headers=headers, data=payload).json()
             if response['success']:
                 account.token = response['result']['token']
+
+
+@app.task(name='update_transactions_status')
+def update_transactions_status():
+    # Nobitex
+    queryset = Transaction.objects.filter(exchange=ExchangeChoice.NOBITEX)
+    for transaction in queryset:
+        account = Account.objects.get(owner=transaction.customer, exchange=ExchangeChoice.NOBITEX)
+        url = 'https://api.nobitex.ir/market/orders/status'
+
+        payload = json.dumps({
+            'id': transaction.transaction_id
+        })
+        headers = {
+            'Content-Type': 'application/json',
+            "Authorization": "Token " + account.token,
+        }
+
+        response = requests.request('POST', url, headers=headers, data=payload).json()
+        if 'status' in response and response['status'] == 'ok':
+            transaction.transaction_fee = float(response['order']['fee'])
+            if response['order']['status'] == 'Active':
+                transaction.status = Status.PENDING
+            elif response['order']['status'] == 'Done':
+                transaction.status = Status.SUCCESS
+            elif response['order']['status'] == 'Canceled':
+                transaction.status = Status.FAILED
+
+    # Wallex
+    queryset = Account.objects.filter(exchange=ExchangeChoice.WALLEX)
+    for account in queryset:
+        url = 'https://api.wallex.ir/v1/account/trades'
+        payload = ""
+        headers = {
+            'Authorization': 'Bearer ' + account.token
+        }
+
+        response = requests.request('GET', url, headers=headers, data=payload).json()['AccountLatestTrades']
+        user_transactions = Transaction.objects.filter(customer=account.owner, exchange=ExchangeChoice.WALLEX).\
+            order_by('-created')
+        counter = 0
+        for transaction in response:
+            if transaction['timestamp'] == str(user_transactions[counter].completion_date):
+                counter += 1
+                user_transactions[counter].transaction_fee = float(transaction['fee'])
+
+        url = 'https://api.wallex.ir/v1/account/openOrders'
+        payload = ""
+        headers = {
+            'Authorization': 'Bearer ' + account.token
+        }
+
+        response = requests.request('GET', url, headers=headers, data=payload).json()['result']['orders']
+        user_transactions.update(status=Status.SUCCESS)
+        for transaction in response:
+            user_transactions.get(transaction_id=transaction['clientOrderId']).status = Status.PENDING
+
+    # Phinix
+    queryset = Account.objects.filter(exchange=ExchangeChoice.PHINIX)
+    for account in queryset:
+        url = 'https://api.phinix.ir/v1/account/trades'
+        payload = ""
+        headers = {
+            'Authorization': 'Bearer ' + account.token
+        }
+
+        response = requests.request('GET', url, headers=headers, data=payload).json()['AccountLatestTrades']
+        user_transactions = Transaction.objects.filter(customer=account.owner, exchange=ExchangeChoice.PHINIX). \
+            order_by('-created')
+        counter = 0
+        for transaction in response:
+            if transaction['timestamp'] == str(user_transactions[counter].completion_date):
+                counter += 1
+                user_transactions[counter].transaction_fee = float(transaction['fee'])
+
+        url = 'https://api.phinix.ir/v1/account/openOrders'
+        payload = ""
+        headers = {
+            'Authorization': 'Bearer ' + account.token
+        }
+
+        response = requests.request('GET', url, headers=headers, data=payload).json()['result']['orders']
+        user_transactions.update(status=Status.SUCCESS)
+        for transaction in response:
+            user_transactions.get(transaction_id=transaction['clientOrderId']).status = Status.PENDING

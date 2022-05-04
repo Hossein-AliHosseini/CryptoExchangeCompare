@@ -2,11 +2,11 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.core.cache import cache
-from django.template import loader
 
 from .tables import TransactionTable, AccountTable, AsksTable, BidsTable
 from .models import Transaction, Account, TransactionType, Status, ExchangeChoice
-from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm, TradeForm, ChoiceForm
+from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm,\
+    TradeForm, ChoiceForm, WithdrawForm, WithdrawConfirmForm
 
 import requests
 import json
@@ -14,7 +14,6 @@ import json
 
 def transaction_view(request):
     if request.user.is_authenticated:
-        # todo: update transactions status
         queryset = Transaction.objects.filter(customer=request.user)
         table = TransactionTable(queryset)
         table.paginate(page=request.GET.get('page', 1), per_page=10)
@@ -56,8 +55,9 @@ def exchange_account_view(request):
                         }
 
                         response = requests.request("POST", url, headers=headers, data=payload).json()
-                        if response['status'] == 'success':
+                        if 'status' in response and response['status'] == 'success':
                             account.token = response['key']
+                            account.save()
                     elif account.exchange == str(ExchangeChoice.PHINIX):
                         url = "https://api.phinix.ir/auth/login"
 
@@ -70,8 +70,9 @@ def exchange_account_view(request):
                         }
 
                         response = requests.request("POST", url, headers=headers, data=payload).json()
-                        if response['success']:
+                        if 'status' in response and response['success']:
                             account.token = response['result']['token']
+                            account.save()
         else:
             form = AccountForm()
         return render(request, 'exchange/account.html', {'form': form,
@@ -109,23 +110,30 @@ def profitandloss_view(request):
                                                       dual_transaction__status=Status.SUCCESS)
             else:
                 queryset = Transaction.objects.filter(customer=request.user,
-                                                      completion_date__gte=form.cleaned_data['range_start'],
-                                                      completion_date__lte=form.cleaned_data['range_end'],
+                                                      created__gte=form.cleaned_data['range_start'],
+                                                      created__lte=form.cleaned_data['range_end'],
                                                       dual_transaction__isnull=False,
                                                       status=Status.SUCCESS,
                                                       dual_transaction__status=Status.SUCCESS)
             # queryset.annotate(profit_by_opposite=F('price')-F('dual_transaction__price'))
             table = TransactionTable(queryset)
             table.paginate(page=request.GET.get('page', 1), per_page=10)
-            # celery task below
-            sell_sum = queryset.filter(type=TransactionType.SELL).aggregate(sell_sum=Sum('price'))['sell_sum']
-            buy_sum = queryset.filter(type=TransactionType.BUY).aggregate(buy_sum=Sum('price'))['buy_sum']
-            # abow sums could be calculated by opposite transactions
+            sell_side = queryset.filter(type=TransactionType.SELL).aggregate(sell_sum=Sum('price'),
+                                                                             sell_fee=Sum('transaction-fee'))
+            buy_side = queryset.filter(type=TransactionType.BUY).aggregate(buy_sum=Sum('price'),
+                                                                           buy_fee=Sum('transaction_fee'))
+            sell_sum, sell_fee = sell_side['sell_sum'], sell_side['sell_fee']
+            buy_sum, buy_fee = buy_side['buy_sum'], buy_side['buy_fee']
+
             if not sell_sum:
                 sell_sum = 0
             if not buy_sum:
                 buy_sum = 0
-            final = sell_sum - buy_sum
+            if not sell_fee:
+                sell_fee = 0
+            if not buy_fee:
+                buy_fee = 0
+            final = sell_sum - buy_sum - sell_fee - buy_fee
             return render(request, 'exchange/profitandloss.html', {'form': form,
                                                                    'table': table,
                                                                    'final': final})
@@ -171,6 +179,7 @@ def trade_view(request, currency, market):
             size = form.cleaned_data['size']
             price = form.cleaned_data['price']
             trade_type = form.cleaned_data['type']
+            transaction_id, status, message = None, None, None
 
             account = Account.objects.get(owner=request.user, exchange=exchange)
             if exchange == str(ExchangeChoice.NOBITEX):
@@ -192,6 +201,8 @@ def trade_view(request, currency, market):
                 message = "The operation was successful"
                 if status == 'failed':
                     message = response['message']
+                else:
+                    transaction_id = response['order']['id']
                 print(response)
             else:
                 url = 'https://api.' + exchange.lower() + '.ir/v1/account/orders'
@@ -210,16 +221,20 @@ def trade_view(request, currency, market):
                 response = requests.request("POST", url, headers=headers, data=payload).json()
                 status = response['success']
                 message = response['message']
-            if status or status == 'ok':
+                if status:
+                    transaction_id = response['result']['clientOrderId']
+            if status is True or status == 'ok':
                 transaction = Transaction.objects.create(customer=request.user,
                                                          crypto=crypto,
                                                          exchange=exchange,
                                                          status=Status.PENDING,
                                                          type=trade_type,
                                                          size=size,
-                                                         price=price)
+                                                         price=price,
+                                                         transaction_id=transaction_id)
                 if trade_type is TransactionType.BUY:
-                    dual = Transaction.objects.filter(type=TransactionType.SELL, customer=request.user). \
+                    dual = Transaction.objects.filter(type=TransactionType.SELL,
+                                                      customer=request.user, crypto=crypto). \
                         order_by('-created')[0]
                     dual.dual_transaction = transaction
                     transaction.dual_transaction = dual
@@ -253,3 +268,82 @@ def choice_details(request):
     else:
         form = ChoiceForm()
         return render(request, 'exchange/choice.html', {'form': form})
+
+
+def withdraw_view(request):
+    if not request.user.is_authenticated:
+        return HttpResponse('Please login first...')
+    if request.method == "POST":
+        form = WithdrawForm(request.POST)
+        if form.is_valid():
+            exchange = form.cleaned_data['exchange']
+            currency = form.cleaned_data['currency']
+            wallet_address = form.cleaned_data['wallet_address']
+            wallet_id = form.cleaned_data['wallet_id']
+            network = form.cleaned_data['network']
+            amount = form.cleaned_data['amount']
+            totp = form.cleaned_data['one_time_password']
+
+            account = Account.objects.get(exchange=ExchangeChoice.NOBITEX, owner=request.user)
+            if exchange == str(ExchangeChoice.NOBITEX):
+                url = 'https://api.nobitex.ir/users/wallets/withdraw'
+
+                payload = json.dumps({
+                    'wallet': wallet_id,
+                    'network': network,
+                    'amount': amount,
+                    'address': wallet_address
+                })
+                headers = {
+                    'Content-Type': 'application/json',
+                    "Authorization": "Token " + account.token,
+                    'X-TOTP': totp
+                }
+
+                response = requests.request('POST', url, headers=headers, data=payload).json()
+                print(response)
+                if 'status' in response and response['status'] == 'ok':
+                    redirect('/withdraw-confirm/' + response['withdraw']['id'])
+                else:
+                    status = response['message']
+                    return render(request, 'exchange/withdraw.html', {'form': form,
+                                                                      'status': status})
+            else:
+                return HttpResponse('No Withdraw API provided for other Exchanges :((')
+    else:
+        form = WithdrawForm()
+        return render(request, 'exchange/withdraw.html', {'form': form,
+                                                          'status': ""})
+
+
+def withdraw_confirm_view(request, withdraw_id):
+    if not request.user.is_authenticated:
+        return HttpResponse("Please login first...")
+    if request.method == "POST":
+        form = WithdrawConfirmForm(request.POST)
+        if form.is_valid():
+            otp = form.cleaned_data['one_time_password']
+
+            account = Account.objects.get(exchange=ExchangeChoice.NOBITEX, owner=request.user)
+            url = 'https://api.nobitex.ir/users/wallets/withdraw-confirm'
+            payload = json.dumps({
+                'withdraw': withdraw_id,
+                'otp': otp
+            })
+            headers = {
+                'Content-Type': 'application/json',
+                "Authorization": "Token " + account.token,
+            }
+
+            response = requests.request('POST', url, headers=headers, data=payload).json()
+
+            if 'status' in response and response['status'] == 'ok':
+                status = "Withdraw done successfully"
+            else:
+                status = response['message']
+            return render(request, 'exchange/withdraw-confirm.html', {'form': form,
+                                                                      'status': status})
+    else:
+        form = WithdrawConfirmForm()
+        return render(request, 'exchange/withdraw-confirm.html', {'form': form,
+                                                                  'status': ''})

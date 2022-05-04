@@ -11,7 +11,7 @@ class TransactionTable(tables.Table):
     class Meta:
         exclude = ['modified', 'customer', ]
         model = Transaction
-        order_by = 'completion_date'
+        order_by = 'created'
         template_name = 'django_tables2/bootstrap4.html'
         empty_text = 'There is no Transaction to show...'
         row_attrs = {"TYPE": lambda record: record.type}

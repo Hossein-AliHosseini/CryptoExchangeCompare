@@ -39,3 +39,17 @@ class TradeForm(forms.Form):
 class ChoiceForm(forms.Form):
     exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES)
     crypto = forms.ChoiceField(choices=Crypto.TYPES)
+
+
+class WithdrawForm(forms.Form):
+    exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES)
+    currency = forms.ChoiceField(choices=Crypto.TYPES)
+    wallet_address = forms.CharField(required=False)
+    wallet_id = forms.IntegerField(required=False)
+    network = forms.CharField(required=False)
+    amount = forms.FloatField(required=False)
+    one_time_password = forms.CharField(required=False)
+
+
+class WithdrawConfirmForm(forms.Form):
+    one_time_password = forms.CharField()

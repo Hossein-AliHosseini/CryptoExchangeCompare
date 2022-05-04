@@ -9,11 +9,13 @@ class ExchangeChoice:
     NOBITEX = 'Nobitex'
     WALLEX = 'Wallex'
     PHINIX = 'Phinix'
+    EXIR = 'Exir'
 
     TYPES = (
         (NOBITEX, 'Nobitex'),
         (WALLEX, 'Wallex'),
         (PHINIX, 'Phinix'),
+        (EXIR, 'Exir'),
     )
 
 
@@ -36,12 +38,10 @@ class Crypto:
 
 
 class Status:
-    NEW = 'New'
     PENDING = 'Pending'
     FAILED = 'Failed'
     SUCCESS = 'Success'
     TYPES = (
-        (NEW, 'New'),
         (PENDING, 'Pending'),
         (FAILED, 'Failed'),
         (SUCCESS, 'Success'),
@@ -107,6 +107,7 @@ class Transaction(TimeStampedModel):
     transaction_fee = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()
+    transaction_id = models.CharField(max_length=256)
 
     def __str__(self):
         return str(self.id)

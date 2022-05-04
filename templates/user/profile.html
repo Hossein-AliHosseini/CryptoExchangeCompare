@@ -10,7 +10,7 @@
 <br> <br>
 {{ person.first_name }} {{ person.last_name }}
 <br> <br>
-<form ALIGN=CENTER method="post">
+<form ALIGN=CENTER method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% bootstrap_form form %}
     Accounts: <button><a href="{% url 'account' %}">Manage Accounts</a></button>
