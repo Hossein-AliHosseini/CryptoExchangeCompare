@@ -37,7 +37,6 @@ def login_view(request):
         if request.method == 'POST':
             form = AuthenticationForm(data=request.POST)
             if form.is_valid():
-                user = form.get_user()
                 username = form.cleaned_data['username']
                 password = form.cleaned_data['password']
                 user = authenticate(username=username,
@@ -97,19 +96,21 @@ def profile_view(request):
         user = request.user
         person = request.user.person
         if request.method == "POST":
-            form = ProfileForm(request.POST)
+            form = ProfileForm(request.POST, request.FILES, instance=person)
             if form.is_valid():
+                print(form.cleaned_data['profile_image'])
                 person.phone_number = form.cleaned_data['phone_number']
                 person.address = form.cleaned_data['address']
+                person.profile_image = form.cleaned_data['profile_image']
                 person.save()
         else:
             form = ProfileForm(initial={
                 'email': user.email,
-                'password': user.password,
                 'phone_number': person.phone_number,
                 'address': person.address,
                 'national_code': person.national_code,
-                'birth_date': person.birthdate
+                'birthdate': person.birthdate,
+                'profile_image': person.profile_image
             })
         return render(request, 'user/profile.html',
                       {'person': person,
