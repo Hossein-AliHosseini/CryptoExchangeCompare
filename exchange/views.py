@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Sum
 from django.core.cache import cache
+from django.contrib.auth.decorators import login_required
 
 from .tables import TransactionTable, AccountTable, AsksTable, BidsTable
 from .models import Transaction, Account, TransactionType, Status, ExchangeChoice
@@ -12,73 +13,70 @@ import requests
 import json
 
 
+@login_required(login_url='/users/login/')
 def transaction_view(request):
-    if request.user.is_authenticated:
-        queryset = Transaction.objects.filter(customer=request.user)
-        table = TransactionTable(queryset)
-        table.paginate(page=request.GET.get('page', 1), per_page=10)
-        return render(request, 'exchange/transactions.html', {'table': table})
-    else:
-        return HttpResponse('Please login first...')
+    queryset = Transaction.objects.filter(customer=request.user)
+    table = TransactionTable(queryset)
+    table.paginate(page=request.GET.get('page', 1), per_page=10)
+    return render(request, 'exchange/transactions.html', {'table': table})
 
 
+@login_required(login_url='/users/login/')
 def exchange_account_view(request):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
+    queryset = Account.objects.filter(owner=request.user)
+    table = AccountTable(queryset)
+    table.paginate(page=request.GET.get('page', 1), per_page=10)
+    if request.method == 'POST':
+        form = AccountForm(request.POST)
+        if form.is_valid():
+            account = Account.objects.create(
+                owner=request.user,
+                exchange=form.cleaned_data['exchange'],
+                exchange_email=form.cleaned_data['exchange_email'],
+                exchange_password=form.cleaned_data['exchange_password'],
+                exchange_phone_number=form.cleaned_data['exchange_phone_number'],
+                token=form.cleaned_data['token'],
+                wallet_address=form.cleaned_data['wallet_address']
+            )
+            if account.token == '':
+                if account.exchange == str(ExchangeChoice.NOBITEX):
+                    url = 'https://api.nobitex.ir/auth/login/'
+
+                    payload = json.dumps({
+                        'username': account.exchange_email,
+                        'password': account.exchange_password,
+                        "captcha": "api"
+                    })
+                    headers = {
+                        "Content-Type": "application/json"
+                    }
+
+                    response = requests.request("POST", url, headers=headers, data=payload).json()
+                    if 'status' in response and response['status'] == 'success':
+                        account.token = response['key']
+                        account.save()
+                elif account.exchange == str(ExchangeChoice.PHINIX):
+                    url = "https://api.phinix.ir/auth/login"
+
+                    payload = json.dumps({
+                        "mobile_number": str(account.exchange_phone_number),
+                        "password": account.exchange_password
+                    })
+                    headers = {
+                        'Content-Type': 'application/json'
+                    }
+
+                    response = requests.request("POST", url, headers=headers, data=payload).json()
+                    if 'status' in response and response['success']:
+                        account.token = response['result']['token']
+                        account.save()
     else:
-        queryset = Account.objects.filter(owner=request.user)
-        table = AccountTable(queryset)
-        table.paginate(page=request.GET.get('page', 1), per_page=10)
-        if request.method == 'POST':
-            form = AccountForm(request.POST)
-            if form.is_valid():
-                account = Account.objects.create(
-                    owner=request.user,
-                    exchange=form.cleaned_data['exchange'],
-                    exchange_email=form.cleaned_data['exchange_email'],
-                    exchange_password=form.cleaned_data['exchange_password'],
-                    exchange_phone_number=form.cleaned_data['exchange_phone_number'],
-                    token=form.cleaned_data['token'],
-                    wallet_address=form.cleaned_data['wallet_address']
-                )
-                if account.token == '':
-                    if account.exchange == str(ExchangeChoice.NOBITEX):
-                        url = 'https://api.nobitex.ir/auth/login/'
-
-                        payload = json.dumps({
-                            'username': account.exchange_email,
-                            'password': account.exchange_password,
-                            "captcha": "api"
-                        })
-                        headers = {
-                            "Content-Type": "application/json"
-                        }
-
-                        response = requests.request("POST", url, headers=headers, data=payload).json()
-                        if 'status' in response and response['status'] == 'success':
-                            account.token = response['key']
-                            account.save()
-                    elif account.exchange == str(ExchangeChoice.PHINIX):
-                        url = "https://api.phinix.ir/auth/login"
-
-                        payload = json.dumps({
-                            "mobile_number": str(account.exchange_phone_number),
-                            "password": account.exchange_password
-                        })
-                        headers = {
-                            'Content-Type': 'application/json'
-                        }
-
-                        response = requests.request("POST", url, headers=headers, data=payload).json()
-                        if 'status' in response and response['success']:
-                            account.token = response['result']['token']
-                            account.save()
-        else:
-            form = AccountForm()
-        return render(request, 'exchange/account.html', {'form': form,
-                                                         'table': table})
+        form = AccountForm()
+    return render(request, 'exchange/account.html', {'form': form,
+                                                     'table': table})
 
 
+@login_required(login_url='/users/login/')
 def account_edit_view(request, pk):
     account = Account.objects.get(pk=pk)
     if request.method == "POST":
@@ -97,9 +95,8 @@ def account_edit_view(request, pk):
     return render(request, 'exchange/edit_account.html', {'form': form})
 
 
+@login_required(login_url='/users/login/')
 def profitandloss_view(request):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
     if request.method == 'POST':
         form = ProfitAndLossForm(request.POST)
         if form.is_valid():
@@ -145,9 +142,8 @@ def profitandloss_view(request):
                                                                'final': 'Please specify range to Calculate Profit and Loss'})
 
 
+@login_required(login_url='/users/login/')
 def orderbooks_view(request):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
     if request.method == 'POST':
         form = ChoiceExchangeForm(request.POST)
         if form.is_valid():
@@ -164,9 +160,8 @@ def orderbooks_view(request):
         return render(request, 'exchange/orderbooks.html', {'form': form})
 
 
+@login_required(login_url='/users/login/')
 def trade_view(request, currency, market):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
     asks = cache.get(currency + str(market).lower() + 'ask')
     bids = cache.get(currency + str(market).lower() + 'bid')
     bids_table = BidsTable(bids)
@@ -268,9 +263,8 @@ def trade_view(request, currency, market):
                                                        'bids': bids_table})
 
 
+@login_required(login_url='/users/login/')
 def choice_details(request):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
     if request.method == "POST":
         form = ChoiceForm(request.POST)
         if form.is_valid():
@@ -283,9 +277,8 @@ def choice_details(request):
         return render(request, 'exchange/choice.html', {'form': form})
 
 
+@login_required(login_url='/users/login/')
 def withdraw_view(request):
-    if not request.user.is_authenticated:
-        return HttpResponse('Please login first...')
     if request.method == "POST":
         form = WithdrawForm(request.POST)
         if form.is_valid():
@@ -322,16 +315,15 @@ def withdraw_view(request):
                     return render(request, 'exchange/withdraw.html', {'form': form,
                                                                       'status': status})
             else:
-                return HttpResponse('No Withdraw API provided for other Exchanges :((')
+                return HttpResponse('No Withdraw API provided for this Exchange :((')
     else:
         form = WithdrawForm()
         return render(request, 'exchange/withdraw.html', {'form': form,
                                                           'status': ""})
 
 
+@login_required(login_url='/users/login/')
 def withdraw_confirm_view(request, withdraw_id):
-    if not request.user.is_authenticated:
-        return HttpResponse("Please login first...")
     if request.method == "POST":
         form = WithdrawConfirmForm(request.POST)
         if form.is_valid():

@@ -1,7 +1,7 @@
 from django.contrib.auth import (login,
                                  logout,
-                                 update_session_auth_hash,
                                  authenticate)
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
@@ -71,50 +71,47 @@ def activate(request, eid, token):
         return HttpResponse('Activation link is invalid!')
 
 
+@login_required(login_url='/users/login/')
 def password_reset_request(request):
-    if request.user.is_authenticated:
-        if request.method == "POST":
-            password_reset_form = PasswordResetForm(request.POST)
-            if password_reset_form.is_valid():
-                email = password_reset_form.cleaned_data['email']
-                associated_users = User.objects.get(email=email)
-                associated_users.send_change_password_link()
-        password_reset_form = PasswordResetForm()
-        return render(request=request, template_name="user/password_reset.html",
-                      context={"password_reset_form": password_reset_form})
-    else:
-        return HttpResponse('Please login first...')
+    if request.method == "POST":
+        password_reset_form = PasswordResetForm(request.POST)
+        if password_reset_form.is_valid():
+            email = password_reset_form.cleaned_data['email']
+            associated_users = User.objects.get(email=email)
+            associated_users.send_change_password_link()
+    password_reset_form = PasswordResetForm()
+    return render(request=request, template_name="user/password_reset.html",
+                  context={"password_reset_form": password_reset_form})
 
 
+@login_required(login_url='/users/login/')
 def logout_view(request):
     logout(request)
     return redirect('home')
 
 
+@login_required(login_url='/users/login/')
 def profile_view(request):
-    if request.user.is_authenticated:
-        user = request.user
-        person = request.user.person
-        if request.method == "POST":
-            form = ProfileForm(request.POST, request.FILES, instance=person)
-            if form.is_valid():
-                print(form.cleaned_data['profile_image'])
-                person.phone_number = form.cleaned_data['phone_number']
-                person.address = form.cleaned_data['address']
-                person.profile_image = form.cleaned_data['profile_image']
-                person.save()
-        else:
-            form = ProfileForm(initial={
-                'email': user.email,
-                'phone_number': person.phone_number,
-                'address': person.address,
-                'national_code': person.national_code,
-                'birthdate': person.birthdate,
-                'profile_image': person.profile_image
-            })
-        return render(request, 'user/profile.html',
-                      {'person': person,
-                       'form': form,
-                       'MEDIA_URL': settings.MEDIA_URL})
+    user = request.user
+    person = request.user.person
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES, instance=person)
+        if form.is_valid():
+            print(form.cleaned_data['profile_image'])
+            person.phone_number = form.cleaned_data['phone_number']
+            person.address = form.cleaned_data['address']
+            person.profile_image = form.cleaned_data['profile_image']
+            person.save()
     else:
-        return HttpResponse('Please login first...')
+        form = ProfileForm(initial={
+            'email': user.email,
+            'phone_number': person.phone_number,
+            'address': person.address,
+            'national_code': person.national_code,
+            'birthdate': person.birthdate,
+            'profile_image': person.profile_image
+        })
+    return render(request, 'user/profile.html',
+                  {'person': person,
+                   'form': form,
+                   'MEDIA_URL': settings.MEDIA_URL})
