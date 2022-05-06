@@ -22,6 +22,7 @@ def signup_view(request):
                 username = form.cleaned_data.get('username')
                 user = User.objects.get(username=username)
                 user.is_active = False
+                user.save()
                 send_sms = form.cleaned_data.get('send_sms')
                 user.send_activation_link(send_sms)
                 return HttpResponse('Check your Email to activate your account')
