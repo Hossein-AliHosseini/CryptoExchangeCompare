@@ -107,6 +107,7 @@ class Transaction(TimeStampedModel):
     transaction_fee = models.FloatField()
     size = models.FloatField()
     price = models.FloatField()
+    stop_limit = models.FloatField(blank=True, null=True)
     transaction_id = models.CharField(max_length=256)
 
     def __str__(self):

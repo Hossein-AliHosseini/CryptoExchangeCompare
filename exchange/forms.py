@@ -34,6 +34,8 @@ class TradeForm(forms.Form):
     size = forms.FloatField()
     price = forms.FloatField()
     type = forms.ChoiceField(choices=TransactionType.TYPES)
+    advanced_options = forms.BooleanField(required=False)
+    stop_limit = forms.DecimalField(max_value=100, min_value=0, required=False)
 
 
 class ChoiceForm(forms.Form):

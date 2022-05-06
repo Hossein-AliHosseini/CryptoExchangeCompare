@@ -5,7 +5,7 @@ from django.core.cache import cache
 
 from .tables import TransactionTable, AccountTable, AsksTable, BidsTable
 from .models import Transaction, Account, TransactionType, Status, ExchangeChoice
-from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm,\
+from .forms import AccountForm, ProfitAndLossForm, ChoiceExchangeForm, \
     TradeForm, ChoiceForm, WithdrawForm, WithdrawConfirmForm
 
 import requests
@@ -179,18 +179,31 @@ def trade_view(request, currency, market):
             size = form.cleaned_data['size']
             price = form.cleaned_data['price']
             trade_type = form.cleaned_data['type']
+            advanced = form.cleaned_data['advanced_options']
+            stop_limit = form.cleaned_data['stop_limit']
             transaction_id, status, message = None, None, None
 
             account = Account.objects.get(owner=request.user, exchange=exchange)
             if exchange == str(ExchangeChoice.NOBITEX):
                 url = "https://api.nobitex.ir/market/orders/add"
-                payload = json.dumps({
-                    "type": str(trade_type).lower(),
-                    "srcCurrency": str(crypto).lower(),
-                    "dstCurrency": 'usdt',
-                    'amount': str(size),
-                    "price": price
-                })
+                if not advanced:
+                    payload = json.dumps({
+                        "type": str(trade_type).lower(),
+                        "srcCurrency": str(crypto).lower() if str(trade_type).lower() == 'sell' else 'usdt',
+                        "dstCurrency": 'usdt' if str(trade_type).lower() == 'buy' else str(crypto).lower(),
+                        'amount': str(size),
+                        "price": price
+                    })
+                else:
+                    payload = json.dumps({
+                        "type": str(trade_type).lower(),
+                        "srcCurrency": str(crypto).lower() if str(trade_type).lower() == 'sell' else 'usdt',
+                        "dstCurrency": 'usdt' if str(trade_type).lower() == 'buy' else str(crypto).lower(),
+                        'amount': str(size),
+                        "price": price,
+                        'execution': 'stop_market',
+                        'stopPrice': str(price * stop_limit / 100)
+                    })
                 headers = {
                     "Authorization": "Token " + account.token,
                     "content-type": "application/json"
@@ -211,7 +224,7 @@ def trade_view(request, currency, market):
                     "quantity": str(size),
                     "side": trade_type.lower(),
                     "symbol": crypto + "USDT",
-                    "type": "market"
+                    "type": "market" if not stop_limit else 'limit'
                 })
                 headers = {
                     'Authorization': 'Bearer ' + account.token,
