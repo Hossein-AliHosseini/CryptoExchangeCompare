@@ -9,7 +9,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.conf import settings
 
 from .forms import CustomUserCreationForm, ProfileForm
-from .models import User
+from .models import User, ActivateUserToken
 from .token import account_activation_token
 
 
@@ -62,11 +62,11 @@ def activate(request, eid, token):
         user = User.objects.get(email=uid)
     except(TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
-    if user is not None:
+    if user is not None and ActivateUserToken.objects.filter(eid=eid).last().token == token:
         user.is_active = True
         user.save()
         return HttpResponse('Thank you for your email confirmation.\
-            Now you can login your account.')
+            Now you can login to your account.')
     else:
         return HttpResponse('Activation link is invalid!')
 
@@ -97,7 +97,6 @@ def profile_view(request):
     if request.method == "POST":
         form = ProfileForm(request.POST, request.FILES, instance=person)
         if form.is_valid():
-            print(form.cleaned_data['profile_image'])
             person.phone_number = form.cleaned_data['phone_number']
             person.address = form.cleaned_data['address']
             person.profile_image = form.cleaned_data['profile_image']
