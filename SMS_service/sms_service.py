@@ -14,7 +14,7 @@ def index():
     api = KavenegarAPI('35735655744145536B744D3545546A55654553652B6A7A6231533550674A4C627042496639742B6A6A67733D')
     params = {'sender': '10008663',
               'receptor': phone_number,
-              'message': '127.0.0.1:8000/activate/' + eid + '/' + token}
+              'message': 'http://127.0.0.1:8000/activate/' + eid + '/' + token}
     try:
         response = api.sms_send(params)
         sys.stdout.write(str(response))
@@ -25,4 +25,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)
