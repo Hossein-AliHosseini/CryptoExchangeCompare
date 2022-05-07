@@ -29,8 +29,8 @@ class ChoiceExchangeForm(forms.Form):
 
 
 class TradeForm(forms.Form):
-    exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES, disabled=True)
-    crypto = forms.ChoiceField(choices=Crypto.TYPES, disabled=True)
+    exchange = forms.ChoiceField(choices=ExchangeChoice.TYPES)
+    crypto = forms.ChoiceField(choices=Crypto.TYPES)
     size = forms.FloatField()
     price = forms.FloatField()
     type = forms.ChoiceField(choices=TransactionType.TYPES)

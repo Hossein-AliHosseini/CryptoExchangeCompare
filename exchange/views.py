@@ -116,7 +116,7 @@ def profitandloss_view(request):
             table = TransactionTable(queryset)
             table.paginate(page=request.GET.get('page', 1), per_page=10)
             sell_side = queryset.filter(type=TransactionType.SELL).aggregate(sell_sum=Sum('price'),
-                                                                             sell_fee=Sum('transaction-fee'))
+                                                                             sell_fee=Sum('transaction_fee'))
             buy_side = queryset.filter(type=TransactionType.BUY).aggregate(buy_sum=Sum('price'),
                                                                            buy_fee=Sum('transaction_fee'))
             sell_sum, sell_fee = sell_side['sell_sum'], sell_side['sell_fee']
@@ -205,13 +205,12 @@ def trade_view(request, currency, market):
                 }
 
                 response = requests.request("POST", url, headers=headers, data=payload).json()
-                status = response['status']
-                message = "The operation was successful"
-                if status == 'failed':
-                    message = response['message']
-                else:
-                    transaction_id = response['order']['id']
                 print(response)
+                status = response['status'] if 'status' in response else response['detail']
+                if status == 'failed' or None:
+                    message = response['message']
+                if status == 'ok':
+                    transaction_id = response['order']['id']
             else:
                 url = 'https://api.' + exchange.lower() + '.ir/v1/account/orders'
                 payload = json.dumps({
@@ -227,6 +226,7 @@ def trade_view(request, currency, market):
                 }
 
                 response = requests.request("POST", url, headers=headers, data=payload).json()
+                print(response)
                 status = response['success']
                 message = response['message']
                 if status:
@@ -311,7 +311,7 @@ def withdraw_view(request):
                 if 'status' in response and response['status'] == 'ok':
                     redirect('/withdraw-confirm/' + response['withdraw']['id'])
                 else:
-                    status = response['message']
+                    status = response['message'] if 'message' in response else "operation failed"
                     return render(request, 'exchange/withdraw.html', {'form': form,
                                                                       'status': status})
             else:
