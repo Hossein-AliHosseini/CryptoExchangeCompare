@@ -311,7 +311,7 @@ def withdraw_view(request):
                 if 'status' in response and response['status'] == 'ok':
                     redirect('/withdraw-confirm/' + response['withdraw']['id'])
                 else:
-                    status = response['message'] if 'message' in response else "operation failed"
+                    status = response['message'] if 'message' in response else response['detail']
                     return render(request, 'exchange/withdraw.html', {'form': form,
                                                                       'status': status})
             else:

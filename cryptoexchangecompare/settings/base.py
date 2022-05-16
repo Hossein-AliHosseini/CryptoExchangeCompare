@@ -43,6 +43,7 @@ CREATED_APPS = [
     'user',
     'exchange',
     'home',
+    'report',
 ]
 
 THIRD_PARTY_APPS = [
@@ -102,9 +103,9 @@ SMS_BACKEND = 'sms.backends.console.SmsBackend'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_USE_TLS = True
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'email@gmail.com'
-EMAIL_HOST_PASSWORD = 'passwordd'
+EMAIL_HOST = 'smtp.ce.sharif.edu'
+EMAIL_HOST_USER = 'alihosseini@ce.sharif.edu'
+EMAIL_HOST_PASSWORD = 'newPassword'
 EMAIL_PORT = '587'
 
 

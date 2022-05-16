@@ -21,3 +21,4 @@ kavenegar
 six
 django-crispy-forms==1.14.0
 django-redis==5.2.0
+django-filter==21.1

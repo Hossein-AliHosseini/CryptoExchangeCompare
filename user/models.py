@@ -44,7 +44,7 @@ class User(AbstractUser):
         activation_message_html = render_to_string('user/user_activate_email.html',
                                                    context=context)
         activation_message_plaintext = strip_tags(activation_message_html)
-        sys.stdout.write(activation_message_plaintext)
+        print(activation_message_plaintext)
 
         if not is_sms:
             email = EmailMultiAlternatives(
@@ -55,14 +55,14 @@ class User(AbstractUser):
                 )
 
             email.attach_alternative(activation_message_html, 'text/html')
-            sys.stdout.write('Sending Email...')
+            print('Sending Email...')
             try:
                 email.send()
-                sys.stdout.write('Email sent successfully.')
+                print('Email sent successfully.')
             except Exception:
-                sys.stdout.write('An error occurred!')
+                print(Exception)
         else:
-            response = requests.get('http://0.0.0.0:5000/send-activation-sms?phone-number=' +
+            response = requests.get('http://127.0.0.1:5000/send-activation-sms?phone-number=' +
                                     self.person.phone_number +
                                     '&eid=' + activate_user_token.eid +
                                     '&token=' + activate_user_token.token)

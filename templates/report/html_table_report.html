@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+{% load render_table from django_tables2 %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+{% block content %}
+    <br><br>
+  <h2>Report</h2>
+  <form method="get">
+    {{ filter.form.as_p }}
+    <input type="submit"/>
+</form>
+<table>
+    <tr>
+      <th>Created</th>
+      <th>User</th>
+      <th>Coin</th>
+      <th>Exchange</th>
+      <th>Status</th>
+      <th>Type</th>
+      <th>Fee</th>
+      <th>Size</th>
+      <th>Price</th>
+
+    </tr>
+    {% for obj in filter.qs %}
+    <tr>
+      <th> {{ obj.created }}</th>
+      <th> {{ obj.customer }}</th>
+      <th> {{ obj.crypto }}</th>
+      <th> {{ obj.exchange }}</th>
+      <th> {{ obj.status }}</th>
+      <th> {{ obj.type }}</th>
+      <th> {{ obj.transaction_fee }}</th>
+      <th> {{ obj.size }}</th>
+      <th> {{ obj.price }}</th>
+    </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
