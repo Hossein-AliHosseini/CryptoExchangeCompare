@@ -5,10 +5,13 @@
 
 {% block content %}
     <br><br>
-  <h2>Report</h2>
+  <h2>Accounts Report</h2>
   <form method="get">
     {{ filter.form.as_p }}
     <input type="submit"/>
 </form>
+<a href="?_export=csv">Export CSV</a>
+&nbsp;&nbsp;
+<a href="?_export=xlsx">Export Excel</a>
     {% render_table table %}
 {% endblock %}

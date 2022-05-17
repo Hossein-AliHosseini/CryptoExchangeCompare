@@ -101,6 +101,9 @@ class User(AbstractUser):
         except Exception:
             sys.stdout.write('An error occurred!')
 
+    def __str__(self):
+        return self.username
+
 
 class Person(TimeStampedModel):
     user = models.OneToOneField('user.User', on_delete=models.CASCADE,
