@@ -4,12 +4,15 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
 {% block content %}
-    <br><br>
-  <h2>Transactions Report</h2>
+
+<br><br><br>
+<h2>Transactions Report</h2>
+<div class="row justify-content-center">
   <form method="get">
-    {{ filter.form.as_p }}
-    <input type="submit"/>
+    {% bootstrap_form filter.form layout='horizontal' %}
+  <input type="submit"/>
 </form>
+</div>
 <a href="?_export=xlsx">Export Excel</a>
 <table>
     <tr>
@@ -26,15 +29,15 @@
     </tr>
     {% for obj in filter.qs %}
     <tr>
-      <th> {{ obj.created }}</th>
-      <th> {{ obj.customer }}</th>
-      <th> {{ obj.crypto }}</th>
-      <th> {{ obj.exchange }}</th>
-      <th> {{ obj.status }}</th>
-      <th> {{ obj.type }}</th>
-      <th> {{ obj.transaction_fee }}</th>
-      <th> {{ obj.size }}</th>
-      <th> {{ obj.price }}</th>
+      <td> {{ obj.created }}</td>
+      <td> {{ obj.customer }}</td>
+      <td> {{ obj.crypto }}</td>
+      <td> {{ obj.exchange }}</td>
+      <td> {{ obj.status }}</td>
+      <td> {{ obj.type }}</td>
+      <td> {{ obj.transaction_fee }}</td>
+      <td> {{ obj.size }}</td>
+      <td> {{ obj.price }}</td>
     </tr>
     {% endfor %}
     </table>

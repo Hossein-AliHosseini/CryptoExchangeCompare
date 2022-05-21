@@ -86,6 +86,9 @@ class Account(TimeStampedModel):
     class Meta:
         unique_together = ('owner', 'exchange')
 
+    def __str__(self):
+        return str(self.exchange) + ' Account with Email: ' + str(self.exchange_email) + ' and Phone Number: ' + str(self.exchange_phone_number)
+
 
 class Transaction(TimeStampedModel):
     customer = models.ForeignKey(User, on_delete=models.CASCADE,
@@ -111,4 +114,4 @@ class Transaction(TimeStampedModel):
     transaction_id = models.CharField(max_length=256)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.type) + ' ' + str(self.size) + ' ' + str(self.crypto) + ' in ' + str(self.exchange) + ' for ' + str(self.price) + ' Tether (Status: ' + str(self.status) + ')'
