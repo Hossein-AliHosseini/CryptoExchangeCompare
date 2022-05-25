@@ -11,10 +11,29 @@
   <form method="get">
     {% bootstrap_form filter.form layout='horizontal' %}
   <input type="submit"/>
+  <a href="{% url 'report_cumulative' %}">Clear Filters</a>
 </form>
+{% if task_id %}
+<script type="text/javascript">
+  $('.document').ready(function(){
+    var task_id = '{{task_id}}'
+    console.log(task_id)
+    var clear = setInterval(function(){
+      $.ajax({
+      type:"GET",
+      url: "{% url 'check_status' %}",
+      data : {"task_id" : task_id},
+   }).done(function(response){
+      if (response !== false){
+        window.location = 'http://127.0.0.1:8000/report/check_status/?task_id=' + task_id
+        clearInterval(clear)
+      }
+   });
+    }, 500)
+ });
+ </script>
+ {% endif %}
 </div>
-<a href="?_export=csv">Export CSV</a>
-&nbsp;&nbsp;
-<a href="?_export=xlsx">Export Excel</a>
+<a href={{ url }}>Export Excel</a>
     {% render_table table %}
 {% endblock %}
