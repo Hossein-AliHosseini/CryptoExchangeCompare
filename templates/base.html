@@ -22,6 +22,18 @@
       });
   });
   $( function() {
+        $( "#id_exchange_email" ).autocomplete({
+          source: "{% url 'email-autocomplete' %}",
+          minLength: 1,
+      });
+  });
+  $( function() {
+        $( "#id_exchange_phone_number" ).autocomplete({
+          source: "{% url 'phone-autocomplete' %}",
+          minLength: 1,
+      });
+  });
+  $( function() {
         $( "#id_account__owner__username__icontains" ).autocomplete({
           source: "{% url 'username-autocomplete' %}",
           minLength: 1,

@@ -73,8 +73,8 @@ def ht_report(request):
         #     return cache.get('tlp')
 
         return render(request, 'report/html_table_report.html',
-                    {'filter': filter, 'task_id': res.task_id,
-                     'url': url})
+                      {'filter': filter, 'task_id': res.task_id,
+                       'url': url})
     return render(request, 'report/html_table_report.html',
                   {'filter': filter, 'url': url})
 
@@ -144,6 +144,17 @@ def email_autocomplete(request):
     q = request.GET.get('term', '')
     res = list()
     queryset = User.objects.filter(email__icontains=q)
+    for query in queryset:
+        res.append(query.email)
+    data = json.dumps(res)
+    mimetypes = 'application/json'
+    return HttpResponse(data, mimetypes)
+
+
+def phone_autocomplete(request):
+    q = request.GET.get('term', '')
+    res = list()
+    queryset = Account.objects.filter(exchange_phone_number__icontains=q)
     for query in queryset:
         res.append(query.email)
     data = json.dumps(res)
