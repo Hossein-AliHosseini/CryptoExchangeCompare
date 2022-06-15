@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+{% load render_table from django_tables2 %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+{% block content %}
+    <body class="row justify-content-center">
+    <br><br><br>
+  <h2>Profile Tag</h2>
+  <form ALIGN=CENTER method="post">
+    {% csrf_token %}
+    {% bootstrap_form form %}
+    <button type="submit">Submit</button>
+  </form>
+{% if qs %}
+<table>
+    <tr>
+      <th>First Name</th>
+      <th>Tag Title</th>
+    </tr>
+    {% for obj in qs %}
+    <tr>
+      <td> {{ obj.content_object.first_name }}</td>
+      <td> {{ obj.tag_title }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+{% endif %}
+    </body>
+{% endblock %}

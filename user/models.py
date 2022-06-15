@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.contrib.contenttypes.fields import GenericRelation
 
 from django.conf import settings
 from django.core.mail.message import EmailMultiAlternatives
@@ -17,6 +18,7 @@ from datetime import datetime, timedelta
 from model_utils.models import TimeStampedModel
 
 from .token import account_activation_token
+from tag.models import Tag
 
 
 class User(AbstractUser):
@@ -52,7 +54,7 @@ class User(AbstractUser):
                 body=activation_message_plaintext,
                 from_email=settings.EMAIL_HOST_USER,
                 to=[self.email]
-                )
+            )
 
             email.attach_alternative(activation_message_html, 'text/html')
             print('Sending Email...')
@@ -83,7 +85,7 @@ class User(AbstractUser):
             'first_name': self.person.first_name
         }
         reset_password_message_html = render_to_string('user/user_reset_password.html',
-                                                   context=context)
+                                                       context=context)
         reset_password_message_plaintext = strip_tags(reset_password_message_html)
         sys.stdout.write(reset_password_message_plaintext)
         email = EmailMultiAlternatives(
@@ -112,10 +114,15 @@ class Person(TimeStampedModel):
     first_name = models.CharField(max_length=64, null=True)
     last_name = models.CharField(max_length=64, null=True)
     birthdate = models.DateField(null=True)
+    province = models.CharField(max_length=32, null=True)
     address = models.CharField(max_length=256)  # validator
     phone_number = models.CharField(max_length=32, null=True)
     profile_image = models.ImageField(upload_to='profile_images',
                                       null=True, default='profile_images/default.png')
+    tags = GenericRelation(Tag)
+
+    def __str__(self):
+        return self.first_name + " " + self.last_name
 
     @property
     def is_complete(self):

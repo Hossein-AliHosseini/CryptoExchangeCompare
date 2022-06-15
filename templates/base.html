@@ -39,6 +39,12 @@
           minLength: 1,
       });
   });
+  $( function() {
+        $( "#id_tag_title__icontains" ).autocomplete({
+          source: "{% url 'tag-title-autocomplete' %}",
+          minLength: 1,
+      });
+  });
 
   </script>
   <title>{% block title %}Crypto Exchange Compare{% endblock %}</title>

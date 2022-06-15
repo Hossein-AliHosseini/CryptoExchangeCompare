@@ -46,6 +46,7 @@ CREATED_APPS = [
     'exchange',
     'home',
     'report',
+    'tag',
 ]
 
 THIRD_PARTY_APPS = [

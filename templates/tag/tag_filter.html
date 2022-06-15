@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+{% load getattrs %}
+{% load render_table from django_tables2 %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+{% block content %}
+
+<br><br><br>
+<h2>Tag Filter</h2>
+<div class="row justify-content-center">
+<form method="get">
+  {% bootstrap_form filter.form layout='horizontal' %}
+  <input type="submit"/>
+  <a href="{% url 'tag-filter' %}">Clear Filters</a>
+</form>
+</div>
+    <div align="center">
+{% if type_check %}
+    <table>
+    <tr>
+        {% for f in fields %}
+      <th>{{ f }}</th>
+        {% endfor %}
+    </tr>
+    {% for obj in qs %}
+    <tr>
+        {% for f in fields %}
+      <td> {{ obj|getattrs:f }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    </table>
+{% else %}
+        <table>
+    <tr>
+      <th>Tag Title</th>
+    </tr>
+    {% for obj in qs %}
+    <tr>
+      <td> {{ obj.tag_title }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+{% endif %}
+    </div>
+{% endblock %}

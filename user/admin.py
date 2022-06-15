@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.contenttypes.admin import GenericStackedInline
 
+from tag.models import Tag
 from .models import User, Person, ActivateUserToken
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 
@@ -31,6 +33,14 @@ class CustomUserAdmin(UserAdmin):
     ordering = ('email',)
 
 
+class TagInLine(GenericStackedInline):
+    model = Tag
+
+
+class TagAdmin(admin.ModelAdmin):
+    inlines = [TagInLine, ]
+
+
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(ActivateUserToken)
-admin.site.register(Person)
+admin.site.register(Person, TagAdmin)

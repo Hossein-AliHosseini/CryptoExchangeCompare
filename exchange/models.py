@@ -1,8 +1,10 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericRelation
 
 from model_utils.models import TimeStampedModel
 
 from user.models import User
+from tag.models import Tag
 
 
 class ExchangeChoice:
@@ -82,6 +84,7 @@ class Account(TimeStampedModel):
     exchange_email = models.EmailField(max_length=128, null=True)
     exchange_phone_number = models.CharField(max_length=32, null=True)
     exchange_password = models.CharField(max_length=128, null=True)
+    tags = GenericRelation(Tag)
 
     class Meta:
         unique_together = ('owner', 'exchange')
@@ -112,6 +115,7 @@ class Transaction(TimeStampedModel):
     price = models.FloatField()
     stop_limit = models.FloatField(blank=True, null=True)
     transaction_id = models.CharField(max_length=256)
+    tags = GenericRelation(Tag)
 
     def __str__(self):
         return str(self.type) + ' ' + str(self.size) + ' ' + str(self.crypto) + ' in ' + str(self.exchange) + ' for ' + str(self.price) + ' Tether (Status: ' + str(self.status) + ')'
